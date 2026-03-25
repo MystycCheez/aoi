@@ -48,6 +48,14 @@ unsigned int getIndexFromStruct(aoiData* Data, ActionInfo ActionData)
 {
     // v * (W * X * Y * Z) + w * (X * Y * Z) + x * (Y * Z) + y * Z + z
 
+    // This shouldn't happen, but I'll keep it here incase it does
+    if ((ActionData.key < 0) ||
+        (ActionData.modifier < 0) ||
+        (ActionData.mouseButton < 0) ||
+        (ActionData.mouseDrag < 0) ||
+        (ActionData.scope < 0)
+    ) return 0;
+
     unsigned int index = 0;
     
     int keyCount = Data->InfoCounts.key;
@@ -67,12 +75,6 @@ unsigned int getIndexFromStruct(aoiData* Data, ActionInfo ActionData)
     printf("%d\n", ActionData.mouseButton);
     printf("%d\n", ActionData.mouseDrag);
     printf("%d\n", ActionData.scope);
-    if ((ActionData.key < 0) ||
-        (ActionData.modifier < 0) ||
-        (ActionData.mouseButton < 0) ||
-        (ActionData.mouseDrag < 0) ||
-        (ActionData.scope < 0)
-    ) return 0;
     return index;
 }
 
@@ -83,7 +85,7 @@ void addActionWithStruct(aoiData* Data, Action* action, ActionInfo ActionData)
     Data->ActionTable[index] = action;
 }
 
-Action* getActionByStruct(aoiData* Data, ActionInfo ActionData)
+Action* getActionFromStruct(aoiData* Data, ActionInfo ActionData)
 {
     unsigned int index = getIndexFromStruct(Data, ActionData);
     printf("Index: %u\n", index);
@@ -95,7 +97,7 @@ Action* getActionByStruct(aoiData* Data, ActionInfo ActionData)
     return action;
 }
 
-Action* getActionByName(aoiData* Data, const char* str)
+Action* getActionFromName(aoiData* Data, const char* str)
 {
     unsigned int index = 0;
     
@@ -107,11 +109,12 @@ Action* getActionByName(aoiData* Data, const char* str)
         if (strcmp(a_ptr->name, str) == 0) return a_ptr;
         a_ptr = RegisteredActions->items[++index];
     }
-    fprintf(stderr, "Failed to retrieve Action!\n");
-    exit(EXIT_FAILURE);
+    fprintf(stderr, "Action not found\n");
+    fprintf(stderr, "Returning \"Do Nothing\"\n");
+    return RegisteredActions->items[0];
 }
 
-void setActionByStruct(aoiData* Data, Action* action, ActionInfo ActionData)
+void setActionWithStruct(aoiData* Data, Action* action, ActionInfo ActionData)
 {
     int index = getIndexFromStruct(Data, ActionData);
     Data->ActionTable[index] = action;
@@ -163,25 +166,7 @@ aoiData* aoi_Init()
 
 void ActionHandlerFromStruct(aoiData* Data, ActionInfo ActionData)
 {
-    if (ActionData.key == 0 &&
-        ActionData.modifier == 0 &&
-        ActionData.mouseButton == 0 &&
-        ActionData.mouseDrag == 0 &&
-        ActionData.scope == 0)
-        return;
-    Action* action = getActionByStruct(Data, ActionData);
-    if (action == NULL) {
-        fprintf(stderr, "getActionByStruct");
-        exit(EXIT_FAILURE);
-    }
-    if (action->action != NULL) {
-        printf("Action: %s\n", action->name);
-        printf("Action: %p\n", action->action);
-    } else {
-        printf("Action: N/A\n");
-        return;
-    }
-
+    Action* action = getActionFromStruct(Data, ActionData);
     action->action(Data);
 }
 

@@ -52,9 +52,9 @@ typedef struct aoiData {
 Action* newAction(aoiData* Data, void (action)(aoiData*), const char* name, const char* desc);
 unsigned int getIndexFromStruct(aoiData* Data, struct ActionInfo ActionData);
 void addActionWithStruct(aoiData* Data, Action* action, struct ActionInfo ActionData);
-Action* getActionByStruct(aoiData* Data, struct ActionInfo ActionData);
-Action* getActionByName(aoiData* Data, const char* str);
-void setActionByStruct(aoiData* Data, Action* action, struct ActionInfo ActionData);
+Action* getActionFromStruct(aoiData* Data, struct ActionInfo ActionData);
+Action* getActionFromName(aoiData* Data, const char* str);
+void setActionWithStruct(aoiData* Data, Action* action, struct ActionInfo ActionData);
 
 aoiData* aoi_Init();
 void ActionHandlerFromStruct(aoiData* Data, ActionInfo ActionData);
