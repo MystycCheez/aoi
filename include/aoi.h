@@ -4,8 +4,8 @@ TODO: Put introduction here
 
 */
 
-#ifndef AOI_BASE_H
-#define AOI_BASE_H
+#ifndef AOI_H
+#define AOI_H
 
 // Taken from: https://www.youtube.com/watch?v=95M6V3mZgrI
 #define da_append(da, item)\
@@ -50,6 +50,7 @@ typedef struct aoiData {
 } aoiData;
 
 Action* newAction(aoiData* Data, void (action)(aoiData*), const char* name, const char* desc);
+Action* newActionFromStruct(aoiData* Data, Action ActionDef);
 unsigned int getIndexFromStruct(aoiData* Data, struct ActionInfo ActionData);
 void addActionWithStruct(aoiData* Data, Action* action, struct ActionInfo ActionData);
 Action* getActionFromStruct(aoiData* Data, struct ActionInfo ActionData);

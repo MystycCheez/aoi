@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Default action functions
+// Default actions
 
 static void A_DoNothing(aoiData* Data)
 {
@@ -18,7 +18,7 @@ static void A_Exit(aoiData* Data)
     exit(EXIT_SUCCESS);
 }
 
-// Misc Functions
+// Action creation and modification functions
 
 // Returns a pointer to the newly created action
 Action* newAction(aoiData* Data, void (action)(aoiData*), const char* name, const char* desc)
@@ -42,6 +42,11 @@ Action* newAction(aoiData* Data, void (action)(aoiData*), const char* name, cons
         exit(EXIT_FAILURE);
     }
     return a_ptr;
+}
+
+Action* newActionFromStruct(aoiData* Data, Action ActionDef)
+{
+    return newAction(Data, ActionDef.action, ActionDef.name, ActionDef.desc);
 }
 
 unsigned int getIndexFromStruct(aoiData* Data, ActionInfo ActionData)

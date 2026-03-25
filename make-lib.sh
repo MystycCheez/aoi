@@ -13,3 +13,6 @@ rm build/*.o
 echo "copy includes and archive to local storage"
 rsync -varzP build/ /usr/local/lib
 rsync -varzP include/ /usr/local/include/aoi
+
+echo "remove lib files"
+rm build/*.a
