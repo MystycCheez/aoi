@@ -75,25 +75,31 @@ unsigned int getIndexFromStruct(aoiData* Data, ActionInfo ActionData)
         (ActionData.mouseButton * isMoving) +
         (ActionData.mouseDrag)
     };
+    #ifdef AOI_DEBUG
     printf("%d\n", ActionData.key);
     printf("%d\n", ActionData.modifier);
     printf("%d\n", ActionData.mouseButton);
     printf("%d\n", ActionData.mouseDrag);
     printf("%d\n", ActionData.scope);
+    #endif
     return index;
 }
 
 void addActionWithStruct(aoiData* Data, Action* action, ActionInfo ActionData)
 {
     unsigned int index = getIndexFromStruct(Data, ActionData);
+    #ifdef AOI_DEBUG
     printf("%s: %u\n", action->name, index);
+    #endif
     Data->ActionTable[index] = action;
 }
 
 Action* getActionFromStruct(aoiData* Data, ActionInfo ActionData)
 {
     unsigned int index = getIndexFromStruct(Data, ActionData);
+    #ifdef AOI_DEBUG
     printf("Index: %u\n", index);
+    #endif
 
     Action* action = Data->ActionTable[index];
     if (action == NULL) {
@@ -127,9 +133,11 @@ void setActionWithStruct(aoiData* Data, Action* action, ActionInfo ActionData)
 
 //
 
-aoiData* aoi_Init()
+aoiData* aoi_InitWithStruct(ActionInfo Maxes)
 {
     aoiData* Data = malloc(sizeof(aoiData));
+
+    Data->LogLevel = LOG_DEFAULT;
 
     Data->RegisteredActions.count = 0;
     Data->RegisteredActions.capacity = 4;
@@ -139,11 +147,12 @@ aoiData* aoi_Init()
     Data->UserData.capacity = 4;
     Data->UserData.items = malloc(sizeof(void*) * Data->UserData.capacity);
 
-    Data->InfoCounts = (ActionInfo){.key = 260, .modifier = 8, .mouseButton = 8, .scope = 2, .mouseDrag = 2};
+    // Data->InfoCounts = (ActionInfo){.key = 260, .modifier = 8, .mouseButton = 8, .scope = 2, .mouseDrag = 2};
+    unsigned int size = Maxes.key * Maxes.modifier * Maxes.mouseButton * Maxes.mouseDrag * Maxes.scope;
+    Data->InfoCounts = Maxes;
 
+    
     Data->ActionData = (ActionInfo){0};
-
-    unsigned int size = Data->InfoCounts.key * Data->InfoCounts.modifier * Data->InfoCounts.mouseButton * Data->InfoCounts.mouseDrag;
 
     Data->ActionTable = calloc(sizeof(Action*), size);
     if (Data->ActionTable == NULL) {

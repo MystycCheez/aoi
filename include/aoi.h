@@ -41,7 +41,13 @@ typedef struct ActionInfo {
     int scope;
 } ActionInfo;
 
+typedef enum LogLevels {
+    LOG_DEFAULT,
+    LOG_DEBUG,
+} LogLevels;
+
 typedef struct aoiData {
+    LogLevels LogLevel;
     ActionInfo InfoCounts;
     ActionInfo ActionData;
     DA RegisteredActions;
@@ -57,12 +63,22 @@ Action* getActionFromStruct(aoiData* Data, struct ActionInfo ActionData);
 Action* getActionFromName(aoiData* Data, const char* str);
 void setActionWithStruct(aoiData* Data, Action* action, struct ActionInfo ActionData);
 
-aoiData* aoi_Init();
+aoiData* aoi_InitWithStruct(ActionInfo Maxes);
 void ActionHandlerFromStruct(aoiData* Data, ActionInfo ActionData);
 void ActionHandler(aoiData* Data);
 
 // Taken from https://x.com/vkrajacic/status/1749816169736073295
+#define aoi_Init(...) \
+    _Pragma("GCC diagnostic push") \
+    _Pragma("GCC diagnostic ignored \"-Winitializer-overrides\"") \
+    aoi_InitWithStruct((ActionInfo){.key = 260, .modifier = 8, .mouseButton = 8, .scope = 2, .mouseDrag = 2, __VA_ARGS__}) \
+    _Pragma("GCC diagnostic pop") 
+
+
 #define addAction(Data, Action, ...) \
     addActionWithStruct((Data), (Action), (ActionInfo){__VA_ARGS__})
+
+#define addUserData(Data, item) \
+    da_append(Data->UserData, item);
 
 #endif
