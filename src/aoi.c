@@ -184,7 +184,36 @@ void ActionHandlerFromStruct(aoiData* Data, ActionInfo ActionData)
     action->action(Data);
 }
 
-void ActionHandler(aoiData *Data)
+void ActionHandler(aoiData* Data)
 {
     ActionHandlerFromStruct(Data, Data->ActionData);
+}
+
+// User Data
+
+void InitUserData(aoiData* Data, unsigned long capacity)
+{
+    if (capacity <= 0) {
+        fprintf(stderr, "Capacity must be greater than 0!\n");
+        exit(EXIT_FAILURE);
+    }
+    Data->UserData.capacity = capacity;
+    Data->UserData.count = 0;
+    Data->UserData.items = malloc(sizeof(UserEntry) * capacity);
+}
+
+void AddUserData(aoiData* Data, char* name, void* data, unsigned long(*hash_fn)(char*, unsigned long))
+{
+    unsigned long hash = hash_fn(name, Data->UserData.hash);
+    unsigned long index = hash % Data->UserData.capacity;
+    Data->UserData.hash = hash;
+    Data->UserData.items[index].key = strdup(name);
+    Data->UserData.items[index].value = data;
+}
+
+void* GetUserData(aoiData* Data, char* name, unsigned long(*hash_fn)(char*, unsigned long))
+{
+    unsigned long hash = hash_fn(name, Data->UserData.hash);
+    unsigned long index = hash % Data->UserData.capacity;
+    return Data->UserData.items[index].value;
 }

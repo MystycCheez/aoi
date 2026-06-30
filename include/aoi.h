@@ -23,6 +23,18 @@ typedef struct DA {
     unsigned long capacity;
 } DA;
 
+typedef struct UserEntry {
+    char* key;
+    void* value;
+} UserEntry;
+
+typedef struct UD {
+    UserEntry* items;
+    unsigned long count;
+    unsigned long capacity;
+    unsigned long hash;
+} UD;
+
 typedef struct aoiData aoiData;
 
 // NOTE: When creating the list of actions, make the list const
@@ -51,7 +63,7 @@ typedef struct aoiData {
     ActionInfo InfoCounts;
     ActionInfo ActionData;
     DA RegisteredActions;
-    DA UserData;
+    UD UserData;
     Action** ActionTable;
 } aoiData;
 
@@ -67,6 +79,10 @@ aoiData* aoi_InitWithStruct(ActionInfo Maxes);
 void ActionHandlerFromStruct(aoiData* Data, ActionInfo ActionData);
 void ActionHandler(aoiData* Data);
 
+void InitUserData(aoiData* Data, unsigned long capacity);
+void AddUserData(aoiData* Data, char* name, void* data, unsigned long(*hash_fn)(char*, unsigned long));
+void* GetUserData(aoiData* Data, char* name, unsigned long(*hash_fn)(char*, unsigned long));
+
 // Taken from https://x.com/vkrajacic/status/1749816169736073295
 #define aoi_Init(...) \
     _Pragma("GCC diagnostic push") \
@@ -75,10 +91,11 @@ void ActionHandler(aoiData* Data);
     _Pragma("GCC diagnostic pop") 
 
 
-#define addAction(Data, Action, ...) \
-    addActionWithStruct((Data), (Action), (ActionInfo){__VA_ARGS__})
+#define addAction(aoiData, Action, ...) \
+    addActionWithStruct((aoiData), (Action), (ActionInfo){__VA_ARGS__})
 
-#define addUserData(Data, item) \
-    da_append(Data->UserData, item);
+// Keeping for reference
+// #define setUserData(aoiData, type, UD, value); \
+//     *(type*)(aoiData)->UserData.items[(UD)] = (value)
 
 #endif
