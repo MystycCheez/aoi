@@ -143,10 +143,6 @@ aoiData* aoi_InitWithStruct(ActionInfo Maxes)
     Data->RegisteredActions.capacity = 4;
     Data->RegisteredActions.items = malloc(sizeof(Action*) * Data->RegisteredActions.capacity);
 
-    Data->UserData.count = 0;
-    Data->UserData.capacity = 4;
-    Data->UserData.items = malloc(sizeof(void*) * Data->UserData.capacity);
-
     // Data->InfoCounts = (ActionInfo){.key = 260, .modifier = 8, .mouseButton = 8, .scope = 2, .mouseDrag = 2};
     unsigned int size = Maxes.key * Maxes.modifier * Maxes.mouseButton * Maxes.mouseDrag * Maxes.scope;
     Data->InfoCounts = Maxes;
