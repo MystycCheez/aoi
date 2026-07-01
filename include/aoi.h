@@ -79,9 +79,9 @@ aoiData* aoi_InitWithStruct(ActionInfo Maxes);
 void ActionHandlerFromStruct(aoiData* Data, ActionInfo ActionData);
 void ActionHandler(aoiData* Data);
 
-void InitUserData(aoiData* Data, unsigned long capacity);
-void AddUserData(aoiData* Data, char* name, void* data, unsigned long(*hash_fn)(char*, unsigned long));
-void* GetUserData(aoiData* Data, char* name, unsigned long(*hash_fn)(char*, unsigned long));
+void InitUserData(aoiData* Data, unsigned long capacity, unsigned long initHash);
+void AddUserData(aoiData* Data, char* name, void* data, unsigned long(*hash_fn)(char* name, unsigned long hash));
+void* GetUserData(aoiData* Data, char* name, unsigned long(*hash_fn)(char* name, unsigned long hash));
 
 // Taken from https://x.com/vkrajacic/status/1749816169736073295
 #define aoi_Init(...) \

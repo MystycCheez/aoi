@@ -191,7 +191,7 @@ void ActionHandler(aoiData* Data)
 
 // User Data
 
-void InitUserData(aoiData* Data, unsigned long capacity)
+void InitUserData(aoiData* Data, unsigned long capacity, unsigned long initHash)
 {
     if (capacity <= 0) {
         fprintf(stderr, "Capacity must be greater than 0!\n");
@@ -200,20 +200,22 @@ void InitUserData(aoiData* Data, unsigned long capacity)
     Data->UserData.capacity = capacity;
     Data->UserData.count = 0;
     Data->UserData.items = malloc(sizeof(UserEntry) * capacity);
+    Data->UserData.hash = initHash;
 }
 
-void AddUserData(aoiData* Data, char* name, void* data, unsigned long(*hash_fn)(char*, unsigned long))
+void AddUserData(aoiData* Data, char* name, void* data, unsigned long(*hash_fn)(char* name, unsigned long hash))
 {
     unsigned long hash = hash_fn(name, Data->UserData.hash);
     unsigned long index = hash % Data->UserData.capacity;
-    Data->UserData.hash = hash;
+    // printf("AddUserData: index: %ld\n", index);
     Data->UserData.items[index].key = strdup(name);
     Data->UserData.items[index].value = data;
 }
 
-void* GetUserData(aoiData* Data, char* name, unsigned long(*hash_fn)(char*, unsigned long))
+void* GetUserData(aoiData* Data, char* name, unsigned long(*hash_fn)(char* name, unsigned long hash))
 {
     unsigned long hash = hash_fn(name, Data->UserData.hash);
     unsigned long index = hash % Data->UserData.capacity;
+    // printf("GetUserData: index: %ld\n", index);
     return Data->UserData.items[index].value;
 }
