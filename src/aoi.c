@@ -218,24 +218,10 @@ void UserDataCleanup(aoiData* Data)
     }
 }
 
-void ActionDataCleanup(aoiData* Data)\
-{
-    size_t index = 0;
-    void* tmp = Data->ActionData.items[index].value;
-    while (index < Data->ActionData.capacity) {
-        if (tmp == Data->ActionData.items[index].value) {index++; continue;}
-        if (Data->ActionData.items[index].value) {
-            printf("ActionData[%zu]: %p\n", index, Data->ActionData.items[index].value);
-            free(Data->ActionData.items[index].value);
-        }
-        index++;
-    }
-}
-
 void aoiCleanup(aoiData* Data)
 {
-    UserDataCleanup(Data);
-    ActionDataCleanup(Data);
+    // UserDataCleanup(Data);
+    // ActionDataCleanup(Data);
 
     free(Data->UserData.items);
     free(Data->ActionData.items);
