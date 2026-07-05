@@ -85,8 +85,8 @@ void AddActionWithStruct(aoiData* Data, Action* action, ActionBinding Bindings)
     memcpy(str, Bindings.binding, 5);
     unsigned long hash = Data->ActionHashFunction(str, Data->ActionData.hash);
     unsigned long index = hash % Data->ActionData.capacity;
-    printf("hash: %ld\n", hash);
-    printf("index: %ld\n", index);
+    // printf("hash: %ld\n", hash);
+    // printf("index: %ld\n", index);
     Data->ActionData.items[index].key = str;
     Data->ActionData.items[index].value = action;
 
@@ -105,7 +105,7 @@ Action* GetActionFromStruct(aoiData* Data, ActionBinding Bindings)
     unsigned long hash = Data->ActionHashFunction((char*)Bindings.binding, Data->ActionData.hash);
     unsigned long index = hash % Data->ActionData.capacity;
     if (!Data->ActionData.items[index].value) return GetActionFromName(Data, "Do Nothing");
-    printf("%s\n", ((Action*)Data->ActionData.items[index].value)->name);
+    // printf("%s\n", ((Action*)Data->ActionData.items[index].value)->name);
     return Data->ActionData.items[index].value;
 }
 
@@ -163,8 +163,8 @@ void AddUserData(aoiData* Data, char* name, void* data)
 
     unsigned long hash = Data->UserDataHashFunction(name, Data->UserData.hash);
     unsigned long index = hash % Data->UserData.capacity;
-    printf("hash: %ld\n", hash);
-    printf("index: %ld\n", index);
+    // printf("hash: %ld\n", hash);
+    // printf("index: %ld\n", index);
     Data->UserData.items[index].key = strdup(name);
     Data->UserData.items[index].value = data;
     Data->UserData.count++;
@@ -202,20 +202,6 @@ aoiData* aoiInit(
     AddAction(Data, A_DONOTHING);
 
     return Data;
-}
-
-void UserDataCleanup(aoiData* Data)
-{
-    size_t index = 0;
-    void* tmp = Data->UserData.items[index].value;
-    while (index < Data->UserData.capacity) {
-        if (tmp == Data->UserData.items[index].value) {index++; continue;}
-        if (Data->UserData.items[index].value) {
-            printf("UserData[%zu]: %p\n", index, Data->UserData.items[index].value);
-            free(Data->UserData.items[index].value);
-        }
-        index++;
-    }
 }
 
 void aoiCleanup(aoiData* Data)
