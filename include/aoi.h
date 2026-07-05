@@ -53,8 +53,7 @@ typedef union ActionBinding {
         char mouseDrag;
         char scope;
     };
-    const char* binding;
-    char binding_a[5];
+    char binding[5];
 } ActionBinding;
 
 typedef enum LogLevels {
@@ -67,12 +66,14 @@ typedef struct aoiData {
     ActionBinding ActiveBindings;
     HashData ActionData;
     HashData UserData;
-    unsigned long(*ActionHashFunction)(const ActionBinding, unsigned long hash);
+    unsigned long(*ActionHashFunction)(char* name, unsigned long hash);
     unsigned long(*UserDataHashFunction)(char* name, unsigned long hash);
 } aoiData;
 
+void A_DoNothing(aoiData* Data);
+
 void InitActionData(aoiData* Data, unsigned long capacity);
-void SetActionHashFunction(aoiData* Data, unsigned long(*hash_fn)(const ActionBinding, unsigned long hash));
+void SetActionHashFunction(aoiData* Data, unsigned long(*hash_fn)(char* name, unsigned long hash));
 Action* NewAction(void (action)(aoiData*), const char* name, const char* desc);
 void AddActionWithStruct(aoiData* Data, Action* action, ActionBinding Bindings);
 Action* GetActionFromStruct(aoiData* Data, ActionBinding Bindings);
@@ -87,7 +88,13 @@ void SetUserDataHashFunction(aoiData* Data, unsigned long(*hash_fn)(char* name, 
 void AddUserData(aoiData* Data, char* name, void* data);
 void* GetUserData(aoiData* Data, char* name);
 
-aoiData* aoiInit(unsigned long initHash, unsigned long UD_capacity, unsigned long AD_capacity);
+aoiData* aoiInit(
+    unsigned long hashSeed, 
+    unsigned long UD_capacity, 
+    unsigned long AD_capacity, 
+    unsigned long(*ud_hash_fn)(char* name, unsigned long hash), 
+    unsigned long(*ad_hash_fn)(char* name, unsigned long hash)
+);
 void aoiCleanup(aoiData* Data);
 
 // Taken from https://x.com/vkrajacic/status/1749816169736073295
@@ -97,14 +104,13 @@ void aoiCleanup(aoiData* Data);
     aoi_InitWithStruct((ActionBinding){.key = 255, .modifier = 8, .mouseButton = 8, .scope = 2, .mouseDrag = 2, __VA_ARGS__}) \
     _Pragma("GCC diagnostic pop") 
 
+#define AddAction(aoiData, Action, ...) \
+    _Pragma("GCC diagnostic push") \
+    _Pragma("GCC diagnostic ignored \"-Winitializer-overrides\"") \
+    AddActionWithStruct((aoiData), (Action), (ActionBinding){.key = 0, .modifier = 0, .mouseButton = 0, .scope = 0, .mouseDrag = 0, __VA_ARGS__}) \
+    _Pragma("GCC diagnostic pop") 
 
-#define addAction(aoiData, Action, ...) \
-    addActionWithStruct((aoiData), (Action), (ActionBinding){__VA_ARGS__})
-
-#define AddAction(aoiData, Action, ...)\
-    AddActionWithStruct((aoiData), (Action), (ActionBinding){__VA_ARGS__})
-
-#define SetAction(aoiData, Action, ...)\
+#define SetAction(aoiData, Action, ...) \
     SetActionWithStruct((aoiData), (Action), (ActionBinding){__VA_ARGS__})
 
 // Keeping for reference
