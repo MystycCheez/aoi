@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Dummy action
+
 void A_DoNothing(aoiData* Data)
 {
     (void)Data;
@@ -41,11 +43,11 @@ Action* NewAction(void (action)(aoiData*), const char* name, const char* desc)
 void ResizeActionHashTable(aoiData* Data)
 {
     HashEntry* tmp = malloc(sizeof(HashEntry) * Data->ActionData.capacity * 1.5);
-    for (size_t i = 0; i < Data->ActionData.capacity; i++) tmp[i].value = NULL;
+    for (size_t i = 0; i < Data->ActionData.capacity; i++) tmp[i].key = NULL;
 
     unsigned long index;
     for (size_t i = 0; i < Data->ActionData.capacity; i++) {
-        if (!Data->ActionData.items[i].key) continue;
+        if (!(char*)Data->ActionData.items[i].key) continue;
         unsigned long hash = Data->ActionHashFunction((char*)Data->ActionData.items[i].key, Data->ActionData.hash);
         index = hash % Data->ActionData.capacity;
         tmp[index].key = Data->ActionData.items[i].key;
@@ -53,18 +55,27 @@ void ResizeActionHashTable(aoiData* Data)
     }
     Data->ActionData.capacity *= 1.5;
     Data->ActionData.items = realloc(Data->ActionData.items, sizeof(HashEntry) * Data->ActionData.capacity);
+    if (!Data->ActionData.items) {
+        fprintf(stderr, "realloc failed!\n");
+        exit(EXIT_FAILURE);
+    }
+    for (size_t i = 0; i < Data->ActionData.capacity; i++) {
+        Data->ActionData.items[i].value = NULL;
+        Data->ActionData.items[i].key = NULL;
+    }
     mempcpy(Data->ActionData.items, tmp, Data->ActionData.capacity);
     free(tmp);
 }
 
+// TODO: make this more like ResizeActionHashTable
 void ResizeUserDataHashTable(aoiData* Data)
 {
     HashEntry* tmp = malloc(sizeof(HashEntry) * Data->UserData.capacity * 1.5);
-    for (size_t i = 0; i < Data->UserData.capacity; i++) tmp[i].value = NULL;
+    for (size_t i = 0; i < Data->UserData.capacity; i++) tmp[i].key = NULL;
 
     unsigned long index;
     for (size_t i = 0; i < Data->UserData.capacity; i++) {
-        if (!Data->UserData.items[i].key) continue;
+        if (!(char*)Data->UserData.items[i].key) continue;
         unsigned long hash = Data->UserDataHashFunction((char*)Data->UserData.items[i].key, Data->UserData.hash);
         index = hash % Data->UserData.capacity;
         tmp[index].key = Data->UserData.items[i].key;
@@ -179,19 +190,62 @@ void* GetUserData(aoiData* Data, char* name)
 
 //
 
+void InitBindings(aoiData* Data, unsigned long capacity, unsigned long initHash)
+{
+    if (!capacity) {
+        fprintf(stderr, "Capacity must be greater than 0!\n");
+        exit(EXIT_FAILURE);
+    }
+    Data->Bindings.capacity = capacity;
+    Data->Bindings.count = 0;
+    Data->Bindings.items = malloc(sizeof(HashEntry) * capacity);
+    Data->Bindings.hash = initHash;
+    for (size_t i = 0; i < capacity; i++) {
+        Data->Bindings.items[i].value = NULL;
+        Data->Bindings.items[i].key = NULL;
+    }
+}
+
+void SetBindingsHashFunction(aoiData* Data, unsigned long(*hash_fn)(char* name, unsigned long hash))
+{
+    Data->BindingsHashFunction = hash_fn;
+}
+
+void AddBinding(aoiData* Data, char* name, void* data)
+{
+    if (Data->Bindings.count > (Data->Bindings.capacity * 0.75)) {
+        Data->Bindings.capacity *= 1.5;
+        Data->Bindings.items = realloc(Data->Bindings.items, sizeof(HashEntry) * Data->Bindings.capacity);
+    }
+
+    unsigned long hash = Data->BindingsHashFunction(name, Data->Bindings.hash);
+    unsigned long index = hash % Data->Bindings.capacity;
+    // printf("hash: %ld\n", hash);
+    // printf("index: %ld\n", index);
+    Data->Bindings.items[index].key = strdup(name);
+    Data->Bindings.items[index].value = data;
+    Data->Bindings.count++;
+}
+
+//
+
 aoiData* aoiInit(
     unsigned long hashSeed, 
     unsigned long UD_capacity, 
     unsigned long AD_capacity, 
     unsigned long(*ud_hash_fn)(char* name, unsigned long hash), 
-    unsigned long(*ad_hash_fn)(char* name, unsigned long hash)
+    unsigned long(*ad_hash_fn)(char* name, unsigned long hash),
+    unsigned long(*bn_hash_fn)(char* name, unsigned long hash)
 )
 {
     aoiData* Data = malloc(sizeof(aoiData));
+    if (!Data) return NULL;
     InitActionData(Data, AD_capacity);
     InitUserData(Data, UD_capacity, hashSeed);
+
     SetUserDataHashFunction(Data, ud_hash_fn);
     SetActionHashFunction(Data, ad_hash_fn);
+    SetBindingsHashFunction(Data, bn_hash_fn);
 
     // Why did I add LogLevel???????????????
     Data->LogLevel = LOG_DEFAULT;
