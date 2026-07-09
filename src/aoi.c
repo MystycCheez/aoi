@@ -12,23 +12,93 @@ void A_DoNothing(aoiData* Data)
     return;
 }
 
+// Hash related
+
+void SetHashFunction(HashData* Table, uint16_t(*hash_fn)(void* key))
+{
+    Table->HashFunction = hash_fn;
+}
+
+void ResizeHashTable(HashData* Table)
+{
+    KV_Pair* tmp = malloc(sizeof(KV_Pair) * Table->capacity * 1.5);
+    for (size_t i = 0; i < Table->capacity; i++) tmp[i].key = NULL;
+
+    uint16_t index;
+    for (size_t i = 0; i < Table->capacity; i++) {
+        if (!Table->items[i].key) continue;
+        uint16_t hash = Table->HashFunction((uint16_t*)Table->items[i].key);
+        index = hash % Table->capacity;
+        tmp[index].key = Table->items[i].key;
+        tmp[index].value = Table->items[i].value;
+    }
+    Table->capacity *= 1.5;
+    Table->items = realloc(Table->items, sizeof(KV_Pair) * Table->capacity);
+    if (!Table->items) {
+        fprintf(stderr, "realloc failed!\n");
+        exit(EXIT_FAILURE);
+    }
+    for (size_t i = 0; i < Table->capacity; i++) {
+        Table->items[i].value = NULL;
+        Table->items[i].key = NULL;
+    }
+    mempcpy(Table->items, tmp, Table->capacity);
+    free(tmp);
+}
+
+//
+
+uint16_t* ConvertBinding(aoiData* Data, Binding* binding)
+{
+    uint16_t* b_list = calloc(Data->BindingData.capacity + 1, 1);
+    for (uint16_t i = 0; i < Data->BindingData.capacity; i++) {
+        uint16_t hash = Data->BindingData.HashFunction((uint16_t*)binding[i].name);
+        uint16_t index = hash % Data->BindingData.capacity;       
+        b_list[index] = *(uint16_t*)Data->BindingData.items[index].value; 
+    }
+    return b_list;
+}
+
+void InitBindings(aoiData* Data, uint16_t capacity)
+{
+    if (!capacity) {
+        fprintf(stderr, "Capacity must be greater than 0!\n");
+        exit(EXIT_FAILURE);
+    }
+    Data->BindingData.capacity = capacity;
+    Data->BindingData.count = 0;
+    Data->BindingData.items = malloc(sizeof(KV_Pair) * capacity);
+    for (size_t i = 0; i < capacity; i++) {
+        Data->BindingData.items[i].value = NULL;
+        Data->BindingData.items[i].key = NULL;
+    }
+}
+
+void AddBinding(aoiData* Data, char* name)
+{
+    if (Data->BindingData.count > (Data->BindingData.capacity * 0.75)) ResizeHashTable(&Data->BindingData);
+
+    uint16_t hash = Data->BindingData.HashFunction(name);
+    uint16_t index = hash % Data->BindingData.capacity;
+
+    Data->BindingData.items[index].key = name;
+    Data->BindingData.items[index].value = 0;
+
+    Data->BindingData.count++;
+}
+
 // Action creation and modification functions
 
-void InitActionData(aoiData* Data, unsigned long capacity)
+void InitActionData(aoiData* Data, uint16_t capacity)
 {
     Data->ActionData.hash = 0; 
     Data->ActionData.count = 0;
     Data->ActionData.capacity = capacity;
-    Data->ActionData.items = malloc(sizeof(HashEntry) * capacity);
+    Data->ActionData.items = malloc(sizeof(KV_Pair) * capacity);
     for (size_t i = 0; i < capacity; i++) {
         Data->ActionData.items[i].value = NULL;
         Data->ActionData.items[i].key = NULL;
     }
-}
-
-void SetActionHashFunction(aoiData* Data, unsigned long(*hash_fn)(char* name, unsigned long hash))
-{
-    Data->ActionHashFunction = hash_fn;
 }
 
 Action* NewAction(void (action)(aoiData*), const char* name, const char* desc)
@@ -40,83 +110,73 @@ Action* NewAction(void (action)(aoiData*), const char* name, const char* desc)
     return a;
 }
 
-void ResizeActionHashTable(aoiData* Data)
+void AddActionByStr(aoiData* Data, Action* action, uint16_t* binding)
 {
-    HashEntry* tmp = malloc(sizeof(HashEntry) * Data->ActionData.capacity * 1.5);
-    for (size_t i = 0; i < Data->ActionData.capacity; i++) tmp[i].key = NULL;
+    if (Data->ActionData.count > (Data->ActionData.capacity * 0.75)) ResizeHashTable(&(Data->ActionData));
 
-    unsigned long index;
-    for (size_t i = 0; i < Data->ActionData.capacity; i++) {
-        if (!(char*)Data->ActionData.items[i].key) continue;
-        unsigned long hash = Data->ActionHashFunction((char*)Data->ActionData.items[i].key, Data->ActionData.hash);
-        index = hash % Data->ActionData.capacity;
-        tmp[index].key = Data->ActionData.items[i].key;
-        tmp[index].value = Data->ActionData.items[i].value;
-    }
-    Data->ActionData.capacity *= 1.5;
-    Data->ActionData.items = realloc(Data->ActionData.items, sizeof(HashEntry) * Data->ActionData.capacity);
-    if (!Data->ActionData.items) {
-        fprintf(stderr, "realloc failed!\n");
-        exit(EXIT_FAILURE);
-    }
-    for (size_t i = 0; i < Data->ActionData.capacity; i++) {
-        Data->ActionData.items[i].value = NULL;
-        Data->ActionData.items[i].key = NULL;
-    }
-    mempcpy(Data->ActionData.items, tmp, Data->ActionData.capacity);
-    free(tmp);
-}
+    uint16_t hash = Data->ActionData.HashFunction(binding);
+    uint16_t index = hash % Data->ActionData.capacity;
 
-// TODO: make this more like ResizeActionHashTable
-void ResizeUserDataHashTable(aoiData* Data)
-{
-    HashEntry* tmp = malloc(sizeof(HashEntry) * Data->UserData.capacity * 1.5);
-    for (size_t i = 0; i < Data->UserData.capacity; i++) tmp[i].key = NULL;
-
-    unsigned long index;
-    for (size_t i = 0; i < Data->UserData.capacity; i++) {
-        if (!(char*)Data->UserData.items[i].key) continue;
-        unsigned long hash = Data->UserDataHashFunction((char*)Data->UserData.items[i].key, Data->UserData.hash);
-        index = hash % Data->UserData.capacity;
-        tmp[index].key = Data->UserData.items[i].key;
-        tmp[index].value = Data->UserData.items[i].value;
-    }
-    Data->UserData.capacity *= 1.5;
-    Data->UserData.items = realloc(Data->UserData.items, sizeof(HashEntry) * Data->UserData.capacity);
-    mempcpy(Data->UserData.items, tmp, Data->UserData.capacity);
-    free(tmp);
-}
-
-void AddActionWithStruct(aoiData* Data, Action* action, ActionBinding Bindings)
-{
-    if (Data->ActionData.count > (Data->ActionData.capacity * 0.75)) ResizeActionHashTable(Data);
-    
-    char* str = malloc(6);
-    memset(str, 0, 6);
-    memcpy(str, Bindings.binding, 5);
-    unsigned long hash = Data->ActionHashFunction(str, Data->ActionData.hash);
-    unsigned long index = hash % Data->ActionData.capacity;
-    // printf("hash: %ld\n", hash);
-    // printf("index: %ld\n", index);
-    Data->ActionData.items[index].key = str;
+    Data->ActionData.items[index].key = binding;
     Data->ActionData.items[index].value = action;
 
     Data->ActionData.count++;
 }
 
-void SetActionWithStruct(aoiData* Data, Action* action, ActionBinding Bindings)
+void AddActionByBinding(aoiData* Data, Action* action, Binding* binding)
 {
-    unsigned long hash = Data->ActionHashFunction((char*)Bindings.binding, Data->ActionData.hash);
-    unsigned long index = hash % Data->ActionData.capacity;
+    if (Data->ActionData.count > (Data->ActionData.capacity * 0.75)) ResizeHashTable(&(Data->ActionData));
+
+    uint16_t* b_list = ConvertBinding(Data, binding);
+
+    uint16_t hash = Data->ActionData.HashFunction(b_list);
+    uint16_t index = hash % Data->ActionData.capacity;
+
+    Data->ActionData.items[index].key = b_list;
+    Data->ActionData.items[index].value = action;
+
+    Data->ActionData.count++;
+}
+
+void AddAction_(aoiData* Data, Action* action, Binding binding[])
+{
+    if (Data->ActionData.count > (Data->ActionData.capacity * 0.75)) ResizeHashTable(&(Data->ActionData));
+
+    uint16_t* b_list = ConvertBinding(Data, binding);
+
+    uint16_t hash = Data->ActionData.HashFunction(b_list);
+    uint16_t index = hash % Data->ActionData.capacity;
+
+    Data->ActionData.items[index].key = b_list;
+    Data->ActionData.items[index].value = action;
+
+    Data->ActionData.count++;
+}
+
+void SetActionWithBinding(aoiData* Data, Action* action, Binding* binding)
+{
+    uint16_t* b_list = ConvertBinding(Data, binding);
+
+    uint16_t hash = Data->ActionData.HashFunction(b_list);
+    uint16_t index = hash % Data->ActionData.capacity;
     Data->ActionData.items[index].value = action;   
 }
 
-Action* GetActionFromStruct(aoiData* Data, ActionBinding Bindings)
+Action* GetActionFromBinding(aoiData* Data, Binding* binding)
 {
-    unsigned long hash = Data->ActionHashFunction((char*)Bindings.binding, Data->ActionData.hash);
-    unsigned long index = hash % Data->ActionData.capacity;
+    uint16_t* b_list = ConvertBinding(Data, binding);
+
+    uint16_t hash = Data->ActionData.HashFunction(b_list);
+    uint16_t index = hash % Data->ActionData.capacity;
     if (!Data->ActionData.items[index].value) return GetActionFromName(Data, "Do Nothing");
-    // printf("%s\n", ((Action*)Data->ActionData.items[index].value)->name);
+    return Data->ActionData.items[index].value;
+}
+
+Action* GetActionFromStr(aoiData* Data, uint16_t* binding)
+{
+    uint16_t hash = Data->ActionData.HashFunction(binding);
+    uint16_t index = hash % Data->ActionData.capacity;
+    if (!Data->ActionData.items[index].value) return GetActionFromName(Data, "Do Nothing");
     return Data->ActionData.items[index].value;
 }
 
@@ -129,22 +189,35 @@ Action* GetActionFromName(aoiData* Data, const char* name)
     return NULL;
 }
 
+Action* GetActionFromCurrentBindings(aoiData* Data)
+{
+    uint16_t hash = Data->ActionData.HashFunction(Data->ActiveBindings);
+    uint16_t index = hash % Data->ActionData.capacity;
+    return Data->ActionData.items[index].value;
+}
+
 //
 
-void ActionHandlerFromStruct(aoiData* Data, ActionBinding Bindings)
+void ActionHandlerBinding(aoiData* Data, Binding* binding)
 {
-    Action* a = GetActionFromStruct(Data, Bindings);
+    Action* a = GetActionFromBinding(Data, binding);
     if (!a->action) A_DoNothing(Data); else a->action(Data);
 }
 
-void ActionHandler(aoiData* Data)
+void ActionHandlerStr(aoiData* Data, uint16_t* binding)
 {
-    ActionHandlerFromStruct(Data, Data->ActiveBindings);
+    Action* a = GetActionFromStr(Data, binding);
+    if (!a->action) A_DoNothing(Data); else a->action(Data);
+}
+
+void ActionHandlerActiveBinding(aoiData* Data)
+{
+    ActionHandlerStr(Data, Data->ActiveBindings);
 }
 
 // User Data
 
-void InitUserData(aoiData* Data, unsigned long capacity, unsigned long initHash)
+void InitUserData(aoiData* Data, uint16_t capacity)
 {
     if (!capacity) {
         fprintf(stderr, "Capacity must be greater than 0!\n");
@@ -152,30 +225,23 @@ void InitUserData(aoiData* Data, unsigned long capacity, unsigned long initHash)
     }
     Data->UserData.capacity = capacity;
     Data->UserData.count = 0;
-    Data->UserData.items = malloc(sizeof(HashEntry) * capacity);
-    Data->UserData.hash = initHash;
+    Data->UserData.items = malloc(sizeof(KV_Pair) * capacity);
     for (size_t i = 0; i < capacity; i++) {
         Data->UserData.items[i].value = NULL;
         Data->UserData.items[i].key = NULL;
     }
 }
 
-void SetUserDataHashFunction(aoiData* Data, unsigned long(*hash_fn)(char* name, unsigned long hash))
-{
-    Data->UserDataHashFunction = hash_fn;
-}
-
 void AddUserData(aoiData* Data, char* name, void* data)
 {
     if (Data->UserData.count > (Data->UserData.capacity * 0.75)) {
         Data->UserData.capacity *= 1.5;
-        Data->UserData.items = realloc(Data->UserData.items, sizeof(HashEntry) * Data->UserData.capacity);
+        Data->UserData.items = realloc(Data->UserData.items, sizeof(KV_Pair) * Data->UserData.capacity);
     }
 
-    unsigned long hash = Data->UserDataHashFunction(name, Data->UserData.hash);
-    unsigned long index = hash % Data->UserData.capacity;
-    // printf("hash: %ld\n", hash);
-    // printf("index: %ld\n", index);
+    uint16_t hash = Data->UserData.HashFunction(name);
+    uint16_t index = hash % Data->UserData.capacity;
+
     Data->UserData.items[index].key = strdup(name);
     Data->UserData.items[index].value = data;
     Data->UserData.count++;
@@ -183,77 +249,48 @@ void AddUserData(aoiData* Data, char* name, void* data)
 
 void* GetUserData(aoiData* Data, char* name)
 {
-    unsigned long hash = Data->UserDataHashFunction(name, Data->UserData.hash);
-    unsigned long index = hash % Data->UserData.capacity;
+    uint16_t hash = Data->UserData.HashFunction(name);
+    uint16_t index = hash % Data->UserData.capacity;
     return Data->UserData.items[index].value;
 }
 
 //
 
-void InitBindings(aoiData* Data, unsigned long capacity, unsigned long initHash)
-{
-    if (!capacity) {
-        fprintf(stderr, "Capacity must be greater than 0!\n");
-        exit(EXIT_FAILURE);
-    }
-    Data->Bindings.capacity = capacity;
-    Data->Bindings.count = 0;
-    Data->Bindings.items = malloc(sizeof(HashEntry) * capacity);
-    Data->Bindings.hash = initHash;
-    for (size_t i = 0; i < capacity; i++) {
-        Data->Bindings.items[i].value = NULL;
-        Data->Bindings.items[i].key = NULL;
-    }
-}
-
-void SetBindingsHashFunction(aoiData* Data, unsigned long(*hash_fn)(char* name, unsigned long hash))
-{
-    Data->BindingsHashFunction = hash_fn;
-}
-
-void AddBinding(aoiData* Data, char* name, void* data)
-{
-    if (Data->Bindings.count > (Data->Bindings.capacity * 0.75)) {
-        Data->Bindings.capacity *= 1.5;
-        Data->Bindings.items = realloc(Data->Bindings.items, sizeof(HashEntry) * Data->Bindings.capacity);
-    }
-
-    unsigned long hash = Data->BindingsHashFunction(name, Data->Bindings.hash);
-    unsigned long index = hash % Data->Bindings.capacity;
-    // printf("hash: %ld\n", hash);
-    // printf("index: %ld\n", index);
-    Data->Bindings.items[index].key = strdup(name);
-    Data->Bindings.items[index].value = data;
-    Data->Bindings.count++;
-}
-
-//
-
 aoiData* aoiInit(
-    unsigned long hashSeed, 
-    unsigned long UD_capacity, 
-    unsigned long AD_capacity, 
-    unsigned long(*ud_hash_fn)(char* name, unsigned long hash), 
-    unsigned long(*ad_hash_fn)(char* name, unsigned long hash),
-    unsigned long(*bn_hash_fn)(char* name, unsigned long hash)
+    uint16_t UserDataCapacity, 
+    uint16_t ActionDataCapacity, 
+    uint16_t BindingCapacity, 
+    uint16_t(*UserDataHashFunction)(void* key), 
+    uint16_t(*ActionDataHashFunction)(void* key),
+    uint16_t(*BindingDataHashFunction)(void* key)
 )
 {
     aoiData* Data = malloc(sizeof(aoiData));
     if (!Data) return NULL;
-    InitActionData(Data, AD_capacity);
-    InitUserData(Data, UD_capacity, hashSeed);
+    InitActionData(Data, ActionDataCapacity);
+    InitUserData(Data, UserDataCapacity);
+    InitBindings(Data, BindingCapacity);
 
-    SetUserDataHashFunction(Data, ud_hash_fn);
-    SetActionHashFunction(Data, ad_hash_fn);
-    SetBindingsHashFunction(Data, bn_hash_fn);
+    SetHashFunction(&Data->ActionData, ActionDataHashFunction);
+    SetHashFunction(&Data->UserData, UserDataHashFunction);
+    SetHashFunction(&Data->BindingData, BindingDataHashFunction);
 
-    // Why did I add LogLevel???????????????
-    Data->LogLevel = LOG_DEFAULT;
-    
-    Data->ActiveBindings = (ActionBinding){0};
-
+    uint16_t* adn = calloc(1, sizeof(BindingCapacity));
     Action* A_DONOTHING = NewAction(A_DoNothing, "Do Nothing", "Do nothing");
-    AddAction(Data, A_DONOTHING);
+    AddActionByStr(Data, A_DONOTHING, adn);
+
+    Action* A_TESTACTION = NULL;
+    Binding at[] = {
+        {"Key", 34},
+        {"State", 2}
+    }; 
+
+    AddActionByBinding(Data, A_TESTACTION, at);
+
+    AddAction(Data, A_TESTACTION, 
+        {"Key", 34},
+        {"State", 2}
+    );
 
     return Data;
 }

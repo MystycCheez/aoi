@@ -7,101 +7,83 @@ TODO: Put introduction here
 #ifndef AOI_H
 #define AOI_H
 
-typedef struct DA {
-    void** items;
-    unsigned long count;
-    unsigned long capacity;
-} DA;
-
-typedef struct HashEntry {
-    const char* key;
-    void* value;
-} HashEntry;
-
-typedef struct HashData {
-    HashEntry* items;
-    unsigned long count;
-    unsigned long capacity;
-    unsigned long hash;
-} HashData;
+#include <stdint.h>
 
 typedef struct aoiData aoiData;
 
+typedef struct KV_Pair {
+    const void* key;
+    void* value;
+} KV_Pair;
+
+typedef struct Binding {
+    const char* name;
+    uint16_t value;
+} Binding;
+
+typedef struct HashData {
+    KV_Pair* items;
+    uint16_t(*HashFunction)(void* key);
+    uint16_t count;
+    uint16_t capacity;
+    uint16_t hash;
+} HashData;
+
 typedef struct Action {
-    void (*const action)(aoiData* Data);
+    void (*const action)(aoiData*);
     const char* name;
     const char* desc;
 } Action;
 
-typedef union ActionBinding {
-    struct {
-        char key;
-        char modifier;
-        char mouseButton;
-        char mouseDrag;
-        char scope;
-    };
-    char binding[5];
-} ActionBinding;
-
-typedef enum LogLevels {
-    LOG_DEFAULT,
-    LOG_DEBUG,
-} LogLevels;
-
 typedef struct aoiData {
-    LogLevels LogLevel;
-    ActionBinding ActiveBindings;
+    uint16_t* ActiveBindings;
     HashData ActionData;
     HashData UserData;
-    HashData Bindings;
-    unsigned long(*ActionHashFunction)(char* name, unsigned long hash);
-    unsigned long(*UserDataHashFunction)(char* name, unsigned long hash);
-    unsigned long(*BindingsHashFunction)(char* name, unsigned long hash);
+    HashData BindingData;
 } aoiData;
 
 void A_DoNothing(aoiData* Data);
 
-void InitActionData(aoiData* Data, unsigned long capacity);
-void SetActionHashFunction(aoiData* Data, unsigned long(*hash_fn)(char* name, unsigned long hash));
+void SetHashFunction(HashData* Table, uint16_t(*hash_fn)(void* key));
+void ResizeHashTable(HashData* Table);
+
+uint16_t* ConvertBinding(aoiData* Data, Binding* binding);
+void InitBindings(aoiData* Data, uint16_t capacity);
+void AddBinding(aoiData* Data, char* name);
+
+void InitActionData(aoiData* Data, uint16_t capacity);
 Action* NewAction(void (action)(aoiData*), const char* name, const char* desc);
-void AddActionWithStruct(aoiData* Data, Action* action, ActionBinding Bindings);
-Action* GetActionFromStruct(aoiData* Data, ActionBinding Bindings);
+void AddActionByStr(aoiData* Data, Action* action, uint16_t* binding);
+void AddActionByBinding(aoiData* Data, Action* action, Binding* binding);
+void AddAction_(aoiData* Data, Action* action, Binding binding[]);
+void SetActionWithBinding(aoiData* Data, Action* action, Binding* binding);
+Action* GetActionFromBinding(aoiData* Data, Binding* binding);
+Action* GetActionFromStr(aoiData* Data, uint16_t* binding);
 Action* GetActionFromName(aoiData* Data, const char* name);
-void SetActionWithStruct(aoiData* Data, Action* action, ActionBinding Bindings);
+Action* GetActionFromCurrentBindings(aoiData* Data);
 
-void ActionHandlerFromStruct(aoiData* Data, ActionBinding Bindings);
-void ActionHandler(aoiData* Data);
+void ActionHandlerBinding(aoiData* Data, Binding* binding);
+void ActionHandlerStr(aoiData* Data, uint16_t* binding);
+void ActionHandlerActiveBinding(aoiData* Data);
 
-void InitUserData(aoiData* Data, unsigned long capacity, unsigned long initHash);
-void SetUserDataHashFunction(aoiData* Data, unsigned long(*hash_fn)(char* name, unsigned long hash));
+void InitUserData(aoiData* Data, uint16_t capacity);
 void AddUserData(aoiData* Data, char* name, void* data);
 void* GetUserData(aoiData* Data, char* name);
 
 aoiData* aoiInit(
-    unsigned long hashSeed, 
-    unsigned long UD_capacity, 
-    unsigned long AD_capacity, 
-    unsigned long(*ud_hash_fn)(char* name, unsigned long hash), 
-    unsigned long(*ad_hash_fn)(char* name, unsigned long hash),
-    unsigned long(*bn_hash_fn)(char* name, unsigned long hash)
+    uint16_t UserDataCapacity, 
+    uint16_t ActionDataCapacity, 
+    uint16_t BindingCapacity, 
+    uint16_t(*UserDataHashFunction)(void* key), 
+    uint16_t(*ActionDataHashFunction)(void* key),
+    uint16_t(*BindingDataHashFunction)(void* key)
 );
 void aoiCleanup(aoiData* Data);
-
-// Taken from https://x.com/vkrajacic/status/1749816169736073295
-#define aoi_Init(...) \
-    _Pragma("GCC diagnostic push") \
-    _Pragma("GCC diagnostic ignored \"-Winitializer-overrides\"") \
-    aoi_InitWithStruct((ActionBinding){.key = 255, .modifier = 8, .mouseButton = 8, .scope = 2, .mouseDrag = 2, __VA_ARGS__}) \
-    _Pragma("GCC diagnostic pop") 
 
 #define AddAction(aoiData, Action, ...) \
     _Pragma("GCC diagnostic push") \
     _Pragma("GCC diagnostic ignored \"-Winitializer-overrides\"") \
-    AddActionWithStruct((aoiData), (Action), (ActionBinding){__VA_ARGS__}) \
+    AddAction_(aoiData, Action, (Binding[]){__VA_ARGS__, {NULL, 0}}) \
     _Pragma("GCC diagnostic pop") 
-
-#define SetAction(aoiData, Action, ...) \
-    SetActionWithStruct((aoiData), (Action), (ActionBinding){__VA_ARGS__})
 
 #endif
