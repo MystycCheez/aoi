@@ -11,6 +11,12 @@ TODO: Put introduction here
 
 typedef struct aoiData aoiData;
 
+enum {
+    AOI_STRICT,
+    AOI_IGNORE,
+    AOI_IGNORE_ALL_ELSE,
+};
+
 typedef struct KV_Pair {
     const void* key;
     void* value;
@@ -36,7 +42,7 @@ typedef struct Action {
 } Action;
 
 typedef struct aoiData {
-    uint16_t* ActiveBindings;
+    uint16_t** ActiveBindings;
     HashData ActionData;
     HashData UserData;
     HashData BindingData;

@@ -37,8 +37,8 @@ void ResizeHashTable(HashData* Table)
 
     uint64_t index;
     for (size_t i = 0; i < Table->capacity; i++) {
-        // printf("items[%zu].key: %p\n", i, Table->items[i].key);
-        // printf("items[%zu].value: %p\n\n", i, Table->items[i].value);
+        printf("items[%zu].key: %p\n", i, Table->items[i].key);
+        printf("items[%zu].value: %p\n\n", i, Table->items[i].value);
         if (!Table->items[i].key) continue;
         uint64_t hash = Table->HashFunction(Table->items[i].key);
         index = hash % Table->capacity;
@@ -74,7 +74,6 @@ uint16_t* ConvertKV_Pair(aoiData* Data, KV_Pair* pairs)
     uint16_t* b_list = calloc(Data->BindingData.capacity, sizeof(uint16_t));
 
     for (uint16_t i = 0; i < Data->BindingData.capacity; i++) {
-        printf(" %s, %u\n", (char*)pairs[i].key, *(uint16_t*)pairs[i].value);
         b_list[i] = *(uint16_t*)pairs[i].value;
     }
 
@@ -95,14 +94,15 @@ void InitBindingData(aoiData* Data, uint16_t capacity)
         Data->BindingData.items[i].value = malloc(sizeof(uint16_t));
         *(uint16_t*)Data->BindingData.items[i].value = 0;
     }
-    Data->ActiveBindings = malloc(sizeof(uint16_t) * Data->BindingData.capacity);
+    Data->ActiveBindings = malloc(sizeof(uint16_t*) * Data->BindingData.capacity);
+    SetActiveBindings(Data);
 }
 
 void AddBinding(aoiData* Data, char* name)
 {
     if (Data->BindingData.count >= (Data->BindingData.capacity * 0.75)) {
         ResizeHashTable(&Data->BindingData);
-        Data->ActiveBindings = realloc(Data->ActiveBindings, sizeof(uint16_t) * Data->BindingData.capacity);
+        Data->ActiveBindings = realloc(Data->ActiveBindings, sizeof(uint16_t*) * Data->BindingData.capacity);
     }
 
     uint64_t hash = Data->BindingData.HashFunction(name);
@@ -112,29 +112,39 @@ void AddBinding(aoiData* Data, char* name)
     *(uint16_t*)Data->BindingData.items[index].value = 0;
 
     Data->BindingData.count++;
+    SetActiveBindings(Data);
 }
 
 void SetBinding(aoiData* Data, Binding binding)
 {
-    printf("Binding:\n Name: %s\n Value: %u\n", binding.name, binding.value);
+    // printf("Binding:\n Name: %s\n Value: %u\n", binding.name, binding.value);
 
-    uint64_t hash = Data->BindingData.HashFunction((void*)binding.name);
+    uint64_t hash = Data->BindingData.HashFunction(binding.name);
     uint64_t index = hash % Data->BindingData.capacity;
 
-    printf("hash: %lu\n", hash);
+    // printf("hash: %lu\n\n", hash);
 
     *(uint16_t*)Data->BindingData.items[index].value = binding.value;
 }
 
 void SetActiveBindings(aoiData* Data)
 {
-    Data->ActiveBindings = ConvertKV_Pair(Data, Data->BindingData.items);
+    for (size_t i = 0; i < Data->BindingData.capacity; i++) {
+        Data->ActiveBindings[i] = NULL;
+        if (!Data->BindingData.items[i].key) continue;
+        // printf("key: %s\n", (char*)Data->BindingData.items[i].key);
+        // printf("key: %u\n", *(uint16_t*)Data->BindingData.items[i].value);
+        uint64_t hash = Data->BindingData.HashFunction(Data->BindingData.items[i].key);
+        uint64_t index = hash % Data->BindingData.capacity;
+        Data->ActiveBindings[index] = Data->BindingData.items[index].value;
+    }
 }
 
 void ResetBindings(aoiData* Data)
 {
     for (uint64_t i = 0; i < Data->BindingData.capacity; i++) {
-        Data->ActiveBindings[i] = 0;
+        if (!Data->ActiveBindings[i]) continue;
+        *Data->ActiveBindings[i] = 0;
     }
 }
 
@@ -163,17 +173,28 @@ Action* NewAction(void (action)(aoiData*), const char* name, const char* desc)
 
 void AddAction_(aoiData* Data, Action* action, Binding* binding)
 {
+    // printf("AddAction_\n");
     if (Data->ActionData.count >= (Data->ActionData.capacity * 0.75)) ResizeHashTable(&(Data->ActionData));
 
-    uint16_t* b_list = ConvertBinding(Data, binding);
+    uint16_t* b_list = malloc(sizeof(uint16_t) * Data->BindingData.capacity);
+    memset(b_list, 0, sizeof(uint16_t) * Data->BindingData.capacity);
 
-    uint64_t hash = Data->ActionData.HashFunction(b_list);
-    uint64_t index = hash % Data->ActionData.capacity;
+    for (size_t i = 0; i < Data->BindingData.capacity; i++) {
+        // printf("Name: %s\n", binding[i].name);
+        // printf("Name: %u\n", binding[i].value);
+        if (!binding[i].name) break;
+        uint64_t hash = Data->BindingData.HashFunction(binding[i].name);
+        uint64_t index = hash % Data->BindingData.capacity;
+        b_list[index] = binding[i].value;
+    }
 
     for (uint16_t i = 0; i < Data->BindingData.capacity; i++) {
-        if (!binding[i].name) break;
-        // printf("%s, %u\n", binding->name, binding->value);
+        printf("%u ", b_list[i]);
     }
+    printf("\n");
+
+    uint64_t hash = Data->BindingData.HashFunction(b_list);
+    uint64_t index = hash % Data->BindingData.capacity;
 
     // printf("index: %zu\n\n", index);
 
@@ -210,8 +231,15 @@ Action* GetAction_(aoiData* Data, Binding* binding)
 
 Action* GetActionFromCurrentBindings(aoiData* Data)
 {
-    uint64_t hash = Data->ActionData.HashFunction(Data->ActiveBindings);
+    uint16_t* values = malloc(sizeof(uint16_t) * Data->BindingData.capacity);
+    memset(values, 0, sizeof(uint16_t) * Data->BindingData.capacity);
+    for (size_t i = 0; i < Data->BindingData.capacity; i ++) {
+        if (!Data->ActiveBindings[i]) continue;
+        values[i] = *Data->ActiveBindings[i];
+    }
+    uint64_t hash = Data->ActionData.HashFunction(values);
     uint64_t index = hash % Data->ActionData.capacity;
+    free(values);
     return Data->ActionData.items[index].value;
 }
 
@@ -242,10 +270,7 @@ void InitUserData(aoiData* Data, uint16_t capacity)
 
 void AddUserData(aoiData* Data, char* name, void* data)
 {
-    if (Data->UserData.count > (Data->UserData.capacity * 0.75)) {
-        Data->UserData.capacity *= 1.5;
-        Data->UserData.items = realloc(Data->UserData.items, sizeof(KV_Pair) * Data->UserData.capacity);
-    }
+    if (Data->UserData.count >= (Data->UserData.capacity * 0.75)) ResizeHashTable(&(Data->UserData));
 
     uint64_t hash = Data->UserData.HashFunction(name);
     uint64_t index = hash % Data->UserData.capacity;
