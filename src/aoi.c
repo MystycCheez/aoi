@@ -37,9 +37,9 @@ void ResizeHashTable(HashData* Table)
 
     uint64_t index;
     for (size_t i = 0; i < Table->capacity; i++) {
-        printf("items[%zu].key: %p\n", i, Table->items[i].key);
-        printf("items[%zu].value: %p\n\n", i, Table->items[i].value);
         if (!Table->items[i].key) continue;
+        // printf("items[%zu].key: %p\n", i, Table->items[i].key);
+        // printf("items[%zu].value: %p\n\n", i, Table->items[i].value);
         uint64_t hash = Table->HashFunction(Table->items[i].key);
         index = hash % Table->capacity;
         tmp[index].key = Table->items[i].key;
@@ -180,23 +180,24 @@ void AddAction_(aoiData* Data, Action* action, Binding* binding)
     memset(b_list, 0, sizeof(uint16_t) * Data->BindingData.capacity);
 
     for (size_t i = 0; i < Data->BindingData.capacity; i++) {
-        // printf("Name: %s\n", binding[i].name);
-        // printf("Name: %u\n", binding[i].value);
         if (!binding[i].name) break;
+        // printf("Name: %s\n", binding[i].name);
+        // printf("Value: %u\n", binding[i].value);
         uint64_t hash = Data->BindingData.HashFunction(binding[i].name);
         uint64_t index = hash % Data->BindingData.capacity;
+        // printf(" index: %zu\n\n", index);
         b_list[index] = binding[i].value;
     }
 
-    for (uint16_t i = 0; i < Data->BindingData.capacity; i++) {
-        printf("%u ", b_list[i]);
-    }
-    printf("\n");
+    // for (uint16_t i = 0; i < Data->BindingData.capacity; i++) {
+    //     printf("%u ", b_list[i]);
+    // }
+    // printf("\n");
 
-    uint64_t hash = Data->BindingData.HashFunction(b_list);
-    uint64_t index = hash % Data->BindingData.capacity;
+    uint64_t hash = Data->ActionData.HashFunction(b_list);
+    uint64_t index = hash % Data->ActionData.capacity;
 
-    // printf("index: %zu\n\n", index);
+    // printf("Blist index: %zu\n\n", index);
 
     Data->ActionData.items[index].key = b_list;
     Data->ActionData.items[index].value = action;
@@ -282,8 +283,17 @@ void AddUserData(aoiData* Data, char* name, void* data)
 
 void* GetUserData(aoiData* Data, char* name)
 {
+    static size_t err_count = 1;
+    
     uint64_t hash = Data->UserData.HashFunction(name);
     uint64_t index = hash % Data->UserData.capacity;
+
+    if (index > Data->UserData.capacity) {
+        fprintf(stderr, "err count: %zu - ", err_count++);
+        fprintf(stderr, "index out of bounds!\n\n");
+        return NULL;
+    }
+    
     return Data->UserData.items[index].value;
 }
 
