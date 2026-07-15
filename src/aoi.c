@@ -62,9 +62,14 @@ uint16_t* ConvertBinding(aoiData* Data, Binding* binding)
 {
     uint16_t* b_list = calloc(Data->BindingData.capacity, sizeof(uint16_t));
 
-    for (uint16_t i = 0; i < Data->BindingData.capacity; i++) {
+    for (size_t i = 0; i < Data->BindingData.capacity; i++) {
         if (!binding[i].name) break;
-        b_list[i] = binding[i].value;
+        printf("Name: %s\n", binding[i].name);
+        printf("Value: %u\n", binding[i].value);
+        uint64_t hash = Data->BindingData.HashFunction(binding[i].name);
+        uint64_t index = hash % Data->BindingData.capacity;
+        printf(" index: %zu\n\n", index);
+        b_list[index] = binding[i].value;
     }
     return b_list;
 }
@@ -176,23 +181,12 @@ void AddAction_(aoiData* Data, Action* action, Binding* binding)
     // printf("AddAction_\n");
     if (Data->ActionData.count >= (Data->ActionData.capacity * 0.75)) ResizeHashTable(&(Data->ActionData));
 
-    uint16_t* b_list = malloc(sizeof(uint16_t) * Data->BindingData.capacity);
-    memset(b_list, 0, sizeof(uint16_t) * Data->BindingData.capacity);
+    uint16_t* b_list = ConvertBinding(Data, binding);
 
-    for (size_t i = 0; i < Data->BindingData.capacity; i++) {
-        if (!binding[i].name) break;
-        // printf("Name: %s\n", binding[i].name);
-        // printf("Value: %u\n", binding[i].value);
-        uint64_t hash = Data->BindingData.HashFunction(binding[i].name);
-        uint64_t index = hash % Data->BindingData.capacity;
-        // printf(" index: %zu\n\n", index);
-        b_list[index] = binding[i].value;
+    for (uint16_t i = 0; i < Data->BindingData.capacity; i++) {
+        printf("%u ", b_list[i]);
     }
-
-    // for (uint16_t i = 0; i < Data->BindingData.capacity; i++) {
-    //     printf("%u ", b_list[i]);
-    // }
-    // printf("\n");
+    printf("\n\n");
 
     uint64_t hash = Data->ActionData.HashFunction(b_list);
     uint64_t index = hash % Data->ActionData.capacity;
@@ -208,6 +202,11 @@ void AddAction_(aoiData* Data, Action* action, Binding* binding)
 void SetAction_(aoiData* Data, Action* action, Binding* binding)
 {
     uint16_t* b_list = ConvertBinding(Data, binding);
+
+    for (uint16_t i = 0; i < Data->BindingData.capacity; i++) {
+        printf("%u ", b_list[i]);
+    }
+    printf("\n\n");
 
     uint64_t hash = Data->ActionData.HashFunction(b_list);
     uint64_t index = hash % Data->ActionData.capacity;
@@ -234,10 +233,17 @@ Action* GetActionFromCurrentBindings(aoiData* Data)
 {
     uint16_t* values = malloc(sizeof(uint16_t) * Data->BindingData.capacity);
     memset(values, 0, sizeof(uint16_t) * Data->BindingData.capacity);
-    for (size_t i = 0; i < Data->BindingData.capacity; i ++) {
-        if (!Data->ActiveBindings[i]) continue;
-        values[i] = *Data->ActiveBindings[i];
+    for (size_t i = 0; i < Data->BindingData.capacity; i++) {
+        if (!Data->BindingData.items[i].key) continue;
+        uint64_t hash = Data->BindingData.HashFunction(Data->BindingData.items[i].key);
+        uint64_t index = hash % Data->BindingData.capacity;
+        values[index] = *(uint16_t*)Data->BindingData.items[i].value;
     }
+    // hash???
+    // for (size_t i = 0; i < Data->BindingData.capacity; i++) {
+    //     if (!Data->ActiveBindings[i]) continue;
+    //     values[i] = *Data->ActiveBindings[i];
+    // }
     uint64_t hash = Data->ActionData.HashFunction(values);
     uint64_t index = hash % Data->ActionData.capacity;
     free(values);
