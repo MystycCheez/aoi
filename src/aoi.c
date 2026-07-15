@@ -64,11 +64,11 @@ uint16_t* ConvertBinding(aoiData* Data, Binding* binding)
 
     for (size_t i = 0; i < Data->BindingData.capacity; i++) {
         if (!binding[i].name) break;
-        printf("Name: %s\n", binding[i].name);
-        printf("Value: %u\n", binding[i].value);
+        // printf("Name: %s\n", binding[i].name);
+        // printf("Value: %u\n", binding[i].value);
         uint64_t hash = Data->BindingData.HashFunction(binding[i].name);
         uint64_t index = hash % Data->BindingData.capacity;
-        printf(" index: %zu\n\n", index);
+        // printf(" index: %zu\n\n", index);
         b_list[index] = binding[i].value;
     }
     return b_list;
@@ -220,6 +220,7 @@ Action* GetAction_(aoiData* Data, Binding* binding)
 
     uint64_t hash = Data->ActionData.HashFunction(b_list);
     uint64_t index = hash % Data->ActionData.capacity;
+
     if (!Data->ActionData.items[index].value) {
         char* name = calloc(Data->ActionData.capacity, 1);
         hash = Data->ActionData.HashFunction(name);
@@ -231,22 +232,19 @@ Action* GetAction_(aoiData* Data, Binding* binding)
 
 Action* GetActionFromCurrentBindings(aoiData* Data)
 {
-    uint16_t* values = malloc(sizeof(uint16_t) * Data->BindingData.capacity);
-    memset(values, 0, sizeof(uint16_t) * Data->BindingData.capacity);
+    uint16_t* b_list = malloc(sizeof(uint16_t) * Data->BindingData.capacity);
+    memset(b_list, 0, sizeof(uint16_t) * Data->BindingData.capacity);
+
     for (size_t i = 0; i < Data->BindingData.capacity; i++) {
-        if (!Data->BindingData.items[i].key) continue;
-        uint64_t hash = Data->BindingData.HashFunction(Data->BindingData.items[i].key);
-        uint64_t index = hash % Data->BindingData.capacity;
-        values[index] = *(uint16_t*)Data->BindingData.items[i].value;
+        if (!Data->ActiveBindings[i]) continue;
+        b_list[i] = *Data->ActiveBindings[i];
     }
-    // hash???
-    // for (size_t i = 0; i < Data->BindingData.capacity; i++) {
-    //     if (!Data->ActiveBindings[i]) continue;
-    //     values[i] = *Data->ActiveBindings[i];
-    // }
-    uint64_t hash = Data->ActionData.HashFunction(values);
+
+    uint64_t hash = Data->ActionData.HashFunction(b_list);
     uint64_t index = hash % Data->ActionData.capacity;
-    free(values);
+    free(b_list);
+    // printf("Key: %s\n", (char*)Data->ActionData.items[index].key);
+    // printf("Value: %p\n", Data->ActionData.items[index].value);
     return Data->ActionData.items[index].value;
 }
 
