@@ -2,7 +2,7 @@
 set -e
 
 echo "clang"
-clang -fsanitize=address -g -O0 -c src/aoi.c -o build/aoi.o -Iinclude/
+clang -O3 -c src/aoi.c -o build/aoi.o -Iinclude/
 
 echo "make archive"
 ar rcs build/libaoi.a build/aoi.o

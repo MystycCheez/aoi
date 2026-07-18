@@ -192,9 +192,12 @@ void AddAction_(aoiData* Data, Action* action, Binding* binding)
     uint64_t index = hash % Data->ActionData.capacity;
 
     // printf("Blist index: %zu\n\n", index);
+    if (!Data->ActionData.items[index].key) {
+        Data->ActionData.items[index].key = b_list;
+        Data->ActionData.items[index].value = action;
+    } else {
 
-    Data->ActionData.items[index].key = b_list;
-    Data->ActionData.items[index].value = action;
+    }
 
     Data->ActionData.count++;
 }
@@ -253,6 +256,7 @@ Action* GetActionFromCurrentBindings(aoiData* Data)
 void ActionHandler(aoiData* Data)
 {
     Action* a = GetActionFromCurrentBindings(Data);
+    printf("Action: %s\n", a->name);
     if ((!a) || (!a->action)) A_DoNothing(Data); else a->action(Data);
 }
 

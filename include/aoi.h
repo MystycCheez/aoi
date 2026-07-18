@@ -11,29 +11,47 @@ TODO: Put introduction here
 
 typedef struct aoiData aoiData;
 
-enum {
+enum Flags {
     AOI_STRICT,
     AOI_IGNORE,
     AOI_IGNORE_ALL_ELSE,
 };
 
-typedef struct KV_Pair {
-    const void* key;
-    void* value;
-} KV_Pair;
+typedef struct BindingEntry {
+    const char *name;
+    uint16_t keyElement;
+} BindingEntry;
 
-typedef struct Binding {
-    const char* name;
-    uint16_t value;
-} Binding;
-
-typedef struct HashData {
-    KV_Pair* items;
-    uint64_t(*HashFunction)(const void* key);
+typedef struct BindingTable {
+    BindingEntry *pairs;
+    struct BindingTable *chain;
     uint64_t count;
     uint64_t capacity;
-    uint64_t hash;
-} HashData;
+} BindingTable;
+
+typedef struct ActionEntry {
+    const uint16_t *key;
+    struct Action *ptr;
+} ActionEntry;
+
+typedef struct ActionTable {
+    ActionEntry *pairs;
+    struct ActionTable *chain;
+    uint64_t count;
+    uint64_t capacity;
+} ActionTable;
+
+typedef struct UserDataEntry {
+    const char *name;
+    void *ptr;
+} UserDataEntry;
+
+typedef struct UserDataTable {
+    UserDataEntry *pairs;
+    struct UserDataTable *chain;
+    uint64_t count;
+    uint64_t capacity;
+} UserDataTable;
 
 typedef struct Action {
     void (*const action)(aoiData*);
@@ -43,9 +61,9 @@ typedef struct Action {
 
 typedef struct aoiData {
     uint16_t** ActiveBindings;
-    HashData ActionData;
-    HashData UserData;
-    HashData BindingData;
+    BindingTable BindingData;
+    ActionTable ActionData;
+    UserDataTable UserData;
 } aoiData;
 
 void A_DoNothing(aoiData* Data);
