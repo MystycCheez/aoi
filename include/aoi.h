@@ -23,7 +23,7 @@ typedef struct BindingEntry {
 } BindingEntry;
 
 typedef struct BindingTable {
-    BindingEntry *pairs;
+    BindingEntry *entries;
     struct BindingTable *chain;
     uint64_t count;
     uint64_t capacity;
@@ -35,7 +35,7 @@ typedef struct ActionEntry {
 } ActionEntry;
 
 typedef struct ActionTable {
-    ActionEntry *pairs;
+    ActionEntry *entries;
     struct ActionTable *chain;
     uint64_t count;
     uint64_t capacity;
@@ -47,7 +47,7 @@ typedef struct UserDataEntry {
 } UserDataEntry;
 
 typedef struct UserDataTable {
-    UserDataEntry *pairs;
+    UserDataEntry *entries;
     struct UserDataTable *chain;
     uint64_t count;
     uint64_t capacity;
