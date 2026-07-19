@@ -29,16 +29,23 @@ uint64_t HashUserData(const char* name)
 
 }
 
-BindingTable* InitBindingTable()
+BindingTable* InitBindingTable(uint64_t capacity)
 {
     BindingTable* Table = malloc(sizeof(BindingTable));
 
-    Table->capacity = 8;
+    Table->capacity = capacity;
     Table->count = 0;
     Table->chain = NULL;
     Table->entries = malloc(sizeof(BindingEntry) * Table->capacity);
 
     return Table;
+}
+
+uint16_t GetBindingKeyElement(BindingTable* Table, const char* name)
+{
+    uint64_t hash = HashBinding(name);
+    uint64_t i = hash % Table->capacity;
+    return Table->entries[i].keyElement;
 }
 
 void CopyBinding(BindingTable* src, BindingEntry* dst, uint64_t index)
@@ -53,29 +60,61 @@ void CopyBinding(BindingTable* src, BindingEntry* dst, uint64_t index)
     }
 }
 
+BindingTable* GetChain(BindingTable* Table)
+{
+    return Table->chain;
+}
+
 void ResizeBindingTable(BindingTable* Table)
 {
-    BindingEntry* tmp = malloc(sizeof(BindingEntry) * Table->capacity * 1.5);
+    BindingTable* list = InitBindingTable(Table->capacity * 4);
+    if (!list) {
+        fprintf(stderr, "ResizeBindingTable:\n");
+        fprintf(stderr, "malloc failed!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    size_t index = 0;
+    for (size_t i = 0; i < Table->count; i++) {
+        if (!Table->entries[index++].name) continue;
+        list->entries[list->count++].name = Table->entries[index++].name;
+        list->entries[list->count++].keyElement = Table->entries[index++].keyElement;
+    }
+
+    BindingTable* Chain = NULL;
+    while ((Chain = GetChain(Table))) {
+        index = 0;
+        for (size_t i = 0; i < Chain->count; i++) {
+            list->entries[list->count++].name = Chain->entries[index++].name;
+            list->entries[list->count++].keyElement = Chain->entries[index++].keyElement;
+        }
+    }
+
+    uint64_t newCap = list->count * 1.5 * 1.5;
+
+    BindingEntry* tmp = malloc(sizeof(BindingEntry) * newCap);
     if (!tmp) {
         fprintf(stderr, "ResizeBindingTable:\n");
         fprintf(stderr, "malloc failed!\n");
         exit(EXIT_FAILURE);
     }
-    for (size_t i = 0; i < (uint64_t)(Table->capacity * 1.5); i++) {
-        tmp[i].name = NULL;
-        tmp[i].keyElement = 0;
+
+    index = 0;
+    for (size_t i = 0; list->entries[index].name; i++) {
+        tmp[i].name = list->entries[index].name;
+        tmp[i].keyElement = list->entries[index].keyElement;
     }
-    for (size_t i = 0; i < Table->capacity; i++) {
-        if (!Table->entries[i].name) continue;
-        CopyBinding(Table, tmp, i);
-    }
-    Table->capacity *= 1.5;
+    free(list->entries);
+    free(list);
+
+    Table->capacity = newCap;
     Table->entries = realloc(Table->entries, sizeof(BindingEntry) * Table->capacity);
     if (!Table->entries) {
         fprintf(stderr, "ResizeBindingTable:\n");
         fprintf(stderr, "realloc failed!\n");
         exit(EXIT_FAILURE);
     }
+    
     mempcpy(Table->entries, tmp, sizeof(BindingEntry) * Table->capacity);
     free(tmp);
 }
