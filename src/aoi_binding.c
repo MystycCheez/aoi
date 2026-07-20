@@ -39,7 +39,7 @@ void ResizeBindingTable(BindingTable* Table)
     for (size_t i = 0; i < Table->count; i++) {
         if (!Table->entries[index++].name) continue;
         list->entries[list->count++].name = Table->entries[index++].name;
-        list->entries[list->count++].keyElement = Table->entries[index++].keyElement;
+        list->entries[list->count++].patternElement = Table->entries[index++].patternElement;
     }
 
     BindingTable* Chain = NULL;
@@ -47,7 +47,7 @@ void ResizeBindingTable(BindingTable* Table)
         index = 0;
         for (size_t i = 0; i < Chain->count; i++) {
             list->entries[list->count++].name = Chain->entries[index++].name;
-            list->entries[list->count++].keyElement = Chain->entries[index++].keyElement;
+            list->entries[list->count++].patternElement = Chain->entries[index++].patternElement;
         }
     }
 
@@ -63,7 +63,7 @@ void ResizeBindingTable(BindingTable* Table)
     index = 0;
     for (size_t i = 0; list->entries[index].name; i++) {
         tmp[i].name = list->entries[index].name;
-        tmp[i].keyElement = list->entries[index].keyElement;
+        tmp[i].patternElement = list->entries[index].patternElement;
     }
     free(list->entries);
     free(list);
@@ -80,20 +80,20 @@ void ResizeBindingTable(BindingTable* Table)
     free(tmp);
 }
 
-void AddBinding(BindingTable* Table, const char* name, uint16_t keyElement)
+void AddBinding(BindingTable* Table, const char* name, uint16_t patternElement)
 {
     uint64_t hash = HashBinding(name);
     uint64_t i = hash % Table->capacity;
     if (Table->entries[i].name) {
         if (Table->chain) {
-            AddBinding(Table->chain, name, keyElement);
+            AddBinding(Table->chain, name, patternElement);
         } else {
             Table->chain = InitBindingTable(DEFAULT_CAPACITY);
-            AddBinding(Table->chain, name, keyElement);
+            AddBinding(Table->chain, name, patternElement);
         }
     } else {
         Table->entries[i].name = name;
-        Table->entries[i].keyElement = keyElement;
+        Table->entries[i].patternElement = patternElement;
     }
     Table->count++;
     if (Table->count >= (Table->capacity * 0.75)) ResizeBindingTable(Table);

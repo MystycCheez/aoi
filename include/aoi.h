@@ -20,37 +20,37 @@ enum Flags {
 };
 
 typedef struct BindingEntry {
-    const char *name;
-    uint16_t keyElement;
+    const char* name;
+    uint16_t patternElement;
 } BindingEntry;
 
 typedef struct BindingTable {
-    BindingEntry *entries;
-    struct BindingTable *chain;
+    BindingEntry* entries;
+    struct BindingTable* chain;
     uint64_t count;
     uint64_t capacity;
 } BindingTable;
 
 typedef struct ActionEntry {
-    const uint16_t *key;
-    struct Action *action;
+    const uint16_t* pattern;
+    struct Action* action;
 } ActionEntry;
 
 typedef struct ActionTable {
-    ActionEntry *entries;
-    struct ActionTable *chain;
+    ActionEntry* entries;
+    struct ActionTable* chain;
     uint64_t count;
     uint64_t capacity;
 } ActionTable;
 
 typedef struct UserDataEntry {
-    const char *name;
-    void *ptr;
+    const char* name;
+    void* ptr;
 } UserDataEntry;
 
 typedef struct UserDataTable {
-    UserDataEntry *entries;
-    struct UserDataTable *chain;
+    UserDataEntry* entries;
+    struct UserDataTable* chain;
     uint64_t count;
     uint64_t capacity;
 } UserDataTable;

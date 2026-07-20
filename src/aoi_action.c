@@ -3,8 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
-uint64_t HashAction(const uint16_t* key)
+uint64_t HashAction(const char* name)
 {
 
 }
@@ -37,8 +38,8 @@ void ResizeActionTable(ActionTable* Table)
 
     size_t index = 0;
     for (size_t i = 0; i < Table->count; i++) {
-        if (!Table->entries[index++].key) continue;
-        list->entries[list->count++].key = Table->entries[index++].key;
+        if (!Table->entries[index++].pattern) continue;
+        list->entries[list->count++].pattern = Table->entries[index++].pattern;
         list->entries[list->count++].action = Table->entries[index++].action;
     }
 
@@ -46,7 +47,7 @@ void ResizeActionTable(ActionTable* Table)
     while ((Chain = GetActionChain(Table))) {
         index = 0;
         for (size_t i = 0; i < Chain->count; i++) {
-            list->entries[list->count++].key = Chain->entries[index++].key;
+            list->entries[list->count++].pattern = Chain->entries[index++].pattern;
             list->entries[list->count++].action = Chain->entries[index++].action;
         }
     }
@@ -61,8 +62,8 @@ void ResizeActionTable(ActionTable* Table)
     }
 
     index = 0;
-    for (size_t i = 0; list->entries[index].key; i++) {
-        tmp[i].key = list->entries[index].key;
+    for (size_t i = 0; list->entries[index].pattern; i++) {
+        tmp[i].pattern = list->entries[index].pattern;
         tmp[i].action = list->entries[index].action;
     }
     free(list->entries);
@@ -80,19 +81,37 @@ void ResizeActionTable(ActionTable* Table)
     free(tmp);
 }
 
-void AddActionFromKey(ActionTable* Table, Action* action, const uint16_t* key)
+bool DoesKeyMatchPattern(const uint16_t* key, const uint16_t* pattern, uint64_t len)
 {
-    uint64_t hash = HashAction(key);
+    size_t index = 0;
+    while (index < len) {
+        if (pattern[index] == UINT16_MAX) continue;
+        if (key[index] != pattern[index]) return false;
+    }
+    return true;
+}
+
+bool KeyPatternLookup(ActionTable* Table, const uint16_t* key)
+{
+    for (size_t i = 0; i < Table->capacity; i++) {
+        if (DoesKeyMatchPattern(key, Table->entries[i].pattern, Table->capacity)) return true;
+    }
+    return false;
+}
+
+void AddActionFromPattern(ActionTable* Table, Action* action, const uint16_t* pattern)
+{
+    uint64_t hash = HashAction(action->name);
     uint64_t i = hash % Table->capacity;
-    if (Table->entries[i].key) {
+    if (Table->entries[i].pattern) {
         if (Table->chain) {
-            AddActionFromKey(Table->chain, action, key);
+            AddActionFromPattern(Table->chain, action, pattern);
         } else {
             Table->chain = InitActionTable(DEFAULT_CAPACITY);
-            AddActionFromKey(Table->chain, action, key);
+            AddActionFromPattern(Table->chain, action, pattern);
         }
     } else {
-        Table->entries[i].key = key;
+        Table->entries[i].pattern = pattern;
         Table->entries[i].action = action;
     }
     Table->count++;
@@ -101,38 +120,38 @@ void AddActionFromKey(ActionTable* Table, Action* action, const uint16_t* key)
 
 void AddActionFromEntry(ActionTable* Table, ActionEntry* entry)
 {
-    AddActionFromKey(Table, entry->action, entry->key);
+    AddActionFromPattern(Table, entry->action, entry->pattern);
 }
 
 void AddActionFromBinding(ActionTable* Table, Action* action, BindingEntry* binding)
 {
-    uint16_t* b_list = ConvertBinding(binding);
-    AddActionFromKey(Table, action, b_list);
+    uint16_t* pattern = ConvertBinding(binding);
+    AddActionFromPattern(Table, action, pattern);
 }
 
 //
 
-ActionEntry* GetActionEntryFromKey(ActionTable* Table, const uint16_t* key)
-{
-    uint64_t hash = HashAction(key);
-    uint64_t i = hash % Table->capacity;
+// ActionEntry* GetActionEntryFromKey(ActionTable* Table, const uint16_t* key)
+// {
+//     uint64_t hash = HashAction(key);
+//     uint64_t i = hash % Table->capacity;
     
-    if (Table->entries[i].key) return &Table->entries[i];
-    ActionTable* tmp;
-    while ((tmp = GetActionChain(Table))) {
-        uint64_t hash = HashAction(key);
-        uint64_t i = hash % tmp->capacity;
-        if (tmp->entries[i].key) return &tmp->entries[i];
-    }
-    fprintf(stderr, "Error: Action not found.\n");
-    return NULL;
-}
+//     if (Table->entries[i].pattern) return &Table->entries[i];
+//     ActionTable* tmp;
+//     while ((tmp = GetActionChain(Table))) {
+//         uint64_t hash = HashAction(key);
+//         uint64_t i = hash % tmp->capacity;
+//         if (tmp->entries[i].pattern) return &tmp->entries[i];
+//     }
+//     fprintf(stderr, "Error: Action not found.\n");
+//     return NULL;
+// }
 
 //
 
-void SetActionFromKeyAction(ActionTable* Table, Action* action, const uint16_t* key)
+void SetActionFromKeyAction(ActionTable* Table, Action* action, const uint16_t* pattern)
 {
-    ActionEntry* ptr = GetActionEntryFromKey(Table, key);
+    ActionEntry* ptr = AddActionFromPattern(Table, pattern);
     if (!ptr) {
         fprintf(stderr, "Error: Action not found.\n");
         return;
@@ -142,7 +161,7 @@ void SetActionFromKeyAction(ActionTable* Table, Action* action, const uint16_t* 
 
 void SetActionFromBinding(ActionTable* Table, Action* action, BindingEntry* binding)
 {
-    uint16_t* b_list = ConvertBinding(binding);
+    uint16_t* pattern = ConvertBinding(binding);
 }
 
 #define AddAction(Table, Action, ...) \
