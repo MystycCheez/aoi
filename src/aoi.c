@@ -41,53 +41,6 @@ uint16_t* ConvertKV_Pair(aoiData* Data, KV_Pair* pairs)
     return b_list;
 }
 
-void InitBindingData(aoiData* Data, uint16_t capacity)
-{
-    if (!capacity) {
-        fprintf(stderr, "Capacity must be greater than 0!\n");
-        exit(EXIT_FAILURE);
-    }
-    Data->BindingData.capacity = capacity;
-    Data->BindingData.count = 0;
-    Data->BindingData.items = malloc(sizeof(KV_Pair) * capacity);
-    for (size_t i = 0; i < capacity; i++) {
-        Data->BindingData.items[i].key = NULL;
-        Data->BindingData.items[i].value = malloc(sizeof(uint16_t));
-        *(uint16_t*)Data->BindingData.items[i].value = 0;
-    }
-    Data->ActiveBindings = malloc(sizeof(uint16_t*) * Data->BindingData.capacity);
-    SetActiveBindings(Data);
-}
-
-void AddBinding(aoiData* Data, char* name)
-{
-    if (Data->BindingData.count >= (Data->BindingData.capacity * 0.75)) {
-        ResizeHashTable(&Data->BindingData);
-        Data->ActiveBindings = realloc(Data->ActiveBindings, sizeof(uint16_t*) * Data->BindingData.capacity);
-    }
-
-    uint64_t hash = Data->BindingData.HashFunction(name);
-    uint64_t index = hash % Data->BindingData.capacity;
-
-    Data->BindingData.items[index].key = name;
-    *(uint16_t*)Data->BindingData.items[index].value = 0;
-
-    Data->BindingData.count++;
-    SetActiveBindings(Data);
-}
-
-void SetBinding(aoiData* Data, Binding binding)
-{
-    // printf("Binding:\n Name: %s\n Value: %u\n", binding.name, binding.value);
-
-    uint64_t hash = Data->BindingData.HashFunction(binding.name);
-    uint64_t index = hash % Data->BindingData.capacity;
-
-    // printf("hash: %lu\n\n", hash);
-
-    *(uint16_t*)Data->BindingData.items[index].value = binding.value;
-}
-
 void SetActiveBindings(aoiData* Data)
 {
     for (size_t i = 0; i < Data->BindingData.capacity; i++) {

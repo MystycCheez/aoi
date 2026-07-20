@@ -39,7 +39,7 @@ void ResizeActionTable(ActionTable* Table)
     for (size_t i = 0; i < Table->count; i++) {
         if (!Table->entries[index++].key) continue;
         list->entries[list->count++].key = Table->entries[index++].key;
-        list->entries[list->count++].ptr = Table->entries[index++].ptr;
+        list->entries[list->count++].action = Table->entries[index++].action;
     }
 
     ActionTable* Chain = NULL;
@@ -47,7 +47,7 @@ void ResizeActionTable(ActionTable* Table)
         index = 0;
         for (size_t i = 0; i < Chain->count; i++) {
             list->entries[list->count++].key = Chain->entries[index++].key;
-            list->entries[list->count++].ptr = Chain->entries[index++].ptr;
+            list->entries[list->count++].action = Chain->entries[index++].action;
         }
     }
 
@@ -63,7 +63,7 @@ void ResizeActionTable(ActionTable* Table)
     index = 0;
     for (size_t i = 0; list->entries[index].key; i++) {
         tmp[i].key = list->entries[index].key;
-        tmp[i].ptr = list->entries[index].ptr;
+        tmp[i].action = list->entries[index].action;
     }
     free(list->entries);
     free(list);
@@ -80,27 +80,70 @@ void ResizeActionTable(ActionTable* Table)
     free(tmp);
 }
 
-void AddAction_(ActionTable* Table, const uint16_t* key, void* ptr)
+void AddActionFromKey(ActionTable* Table, Action* action, const uint16_t* key)
 {
     uint64_t hash = HashAction(key);
     uint64_t i = hash % Table->capacity;
     if (Table->entries[i].key) {
         if (Table->chain) {
-            AddAction_(Table->chain, key, ptr);
+            AddActionFromKey(Table->chain, action, key);
         } else {
             Table->chain = InitActionTable(DEFAULT_CAPACITY);
-            AddAction_(Table->chain, key, ptr);
+            AddActionFromKey(Table->chain, action, key);
         }
     } else {
         Table->entries[i].key = key;
-        Table->entries[i].ptr = ptr;
+        Table->entries[i].action = action;
     }
     Table->count++;
     if (Table->count >= (Table->capacity * 0.75)) ResizeActionTable(Table);
 }
 
-void AddActionWithStruct(ActionTable* Table, ActionEntry* entry)
+void AddActionFromEntry(ActionTable* Table, ActionEntry* entry)
 {
-    AddAction_(Table, entry->key, entry->ptr);
+    AddActionFromKey(Table, entry->action, entry->key);
 }
 
+void AddActionFromBinding(ActionTable* Table, Action* action, BindingEntry* binding)
+{
+    uint16_t* b_list = ConvertBinding(binding);
+    AddActionFromKey(Table, action, b_list);
+}
+
+//
+
+ActionEntry* GetActionEntryFromKey(ActionTable* Table, const uint16_t* key)
+{
+    uint64_t hash = HashAction(key);
+    uint64_t i = hash % Table->capacity;
+    
+    if (Table->entries[i].key) return &Table->entries[i];
+    ActionTable* tmp;
+    while ((tmp = GetActionChain(Table))) {
+        uint64_t hash = HashAction(key);
+        uint64_t i = hash % tmp->capacity;
+        if (tmp->entries[i].key) return &tmp->entries[i];
+    }
+    fprintf(stderr, "Error: Action not found.\n");
+    return NULL;
+}
+
+//
+
+void SetActionFromKeyAction(ActionTable* Table, Action* action, const uint16_t* key)
+{
+    ActionEntry* ptr = GetActionEntryFromKey(Table, key);
+    if (!ptr) {
+        fprintf(stderr, "Error: Action not found.\n");
+        return;
+    }
+    ptr->action = action;
+}
+
+void SetActionFromBinding(ActionTable* Table, Action* action, BindingEntry* binding)
+{
+    uint16_t* b_list = ConvertBinding(binding);
+}
+
+#define AddAction(Table, Action, ...) \
+    AddActionWithBinding(Table, Action, (Binding[]){__VA_ARGS__, {NULL, 0}})

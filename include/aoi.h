@@ -33,7 +33,7 @@ typedef struct BindingTable {
 
 typedef struct ActionEntry {
     const uint16_t *key;
-    struct Action *ptr;
+    struct Action *action;
 } ActionEntry;
 
 typedef struct ActionTable {
@@ -70,6 +70,9 @@ typedef struct aoiData {
 
 void A_DoNothing(aoiData* Data);
 
+//
+uint16_t* ConvertBinding(BindingEntry* entry);
+
 // aoi_binding.c
 uint64_t HashBinding(const char* name);
 BindingTable* InitBindingTable(uint64_t capacity);
@@ -82,6 +85,8 @@ void AddBinding(BindingTable* Table, const char* name, uint16_t keyElement);
 
 // aoi_userdata.c
 
+
+//
 aoiData* aoiInit(
     uint16_t UserDataCapacity, 
     uint16_t ActionDataCapacity, 
@@ -91,9 +96,6 @@ aoiData* aoiInit(
     uint64_t(*BindingDataHashFunction)(const void* key)
 );
 void aoiCleanup(aoiData* Data);
-
-#define AddAction(aoiData, Action, ...) \
-    AddAction_(aoiData, Action, (Binding[]){__VA_ARGS__, {NULL, 0}})
 
 #define SetAction(aoiData, Action, ...) \
     SetAction_(aoiData, Action, (Binding[]){__VA_ARGS__, {NULL, 0}})
