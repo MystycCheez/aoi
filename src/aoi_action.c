@@ -10,15 +10,16 @@ uint64_t HashAction(const char* name)
 
 }
 
-void InitActionData(aoiData* Data, uint16_t capacity)
+ActionTable* InitActionData(uint64_t capacity)
 {
-    Data->ActionData.count = 0;
-    Data->ActionData.capacity = capacity;
-    Data->ActionData.entries = malloc(sizeof(ActionEntry) * capacity);
-    for (size_t i = 0; i < capacity; i++) {
-        Data->ActionData.entries[i].pattern = NULL;
-        Data->ActionData.entries[i].action = NULL;
-    }
+    ActionTable* Table = malloc(sizeof(ActionTable));
+
+    Table->capacity = capacity;
+    Table->count = 0;
+    Table->chain = NULL;
+    Table->entries = malloc(sizeof(ActionEntry) * Table->capacity);
+
+    return Table;
 }
 
 Action* NewAction(void (action)(aoiData*), const char* name, const char* desc)

@@ -12,29 +12,20 @@ void A_DoNothing(aoiData* Data)
     return;
 }
 
-// User Data
-
-//
+// aoi specific
 
 aoiData* aoiInit(
     uint16_t UserDataCapacity, 
     uint16_t ActionDataCapacity, 
-    uint16_t BindingCapacity, 
-    uint64_t(*UserDataHashFunction)(const void* key), 
-    uint64_t(*ActionDataHashFunction)(const void* key),
-    uint64_t(*BindingDataHashFunction)(const void* key)
+    uint16_t BindingCapacity
 )
 {
     aoiData* Data = malloc(sizeof(aoiData));
     if (!Data) return NULL;
     
-    InitActionData(Data, ActionDataCapacity);
-    InitUserData(Data, UserDataCapacity);
-    InitBindingData(Data, BindingCapacity);
-
-    SetHashFunction(&Data->ActionData, ActionDataHashFunction);
-    SetHashFunction(&Data->UserData, UserDataHashFunction);
-    SetHashFunction(&Data->BindingData, BindingDataHashFunction);
+    Data->ActionData = *InitActionData(ActionDataCapacity);
+    Data->UserData = *InitUserData(UserDataCapacity);
+    Data->BindingData = *InitBindingData(BindingCapacity);
 
     return Data;
 }
@@ -44,7 +35,8 @@ void aoiCleanup(aoiData* Data)
     // UserDataCleanup(Data);
     // ActionDataCleanup(Data);
 
-    free(Data->UserData.items);
-    free(Data->ActionData.items);
+    free(Data->UserData.entries);
+    free(Data->ActionData.entries);
+    free(Data->UserData.entries);
     free(Data);
 }

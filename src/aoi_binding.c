@@ -9,7 +9,7 @@ uint64_t HashBinding(const char* name)
 
 }
 
-BindingTable* InitBindingTable(uint64_t capacity)
+BindingTable* InitBindingData(uint64_t capacity)
 {
     BindingTable* Table = malloc(sizeof(BindingTable));
 
@@ -28,7 +28,7 @@ BindingTable* GetBindingChain(BindingTable* Table)
 
 void ResizeBindingTable(BindingTable* Table)
 {
-    BindingTable* list = InitBindingTable(Table->capacity * 4);
+    BindingTable* list = InitBindingData(Table->capacity * 4);
     if (!list) {
         fprintf(stderr, "ResizeBindingTable:\n");
         fprintf(stderr, "malloc failed!\n");
@@ -88,7 +88,7 @@ void AddBinding(BindingTable* Table, const char* name, uint16_t patternElement)
         if (Table->chain) {
             AddBinding(Table->chain, name, patternElement);
         } else {
-            Table->chain = InitBindingTable(DEFAULT_CAPACITY);
+            Table->chain = InitBindingData(DEFAULT_CAPACITY);
             AddBinding(Table->chain, name, patternElement);
         }
     } else {

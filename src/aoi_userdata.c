@@ -9,19 +9,16 @@ uint64_t HashUserData(const char* name)
 
 }
 
-void InitUserData(aoiData* Data, uint16_t capacity)
+UserDataTable* InitUserData(uint64_t capacity)
 {
-    if (!capacity) {
-        fprintf(stderr, "Capacity must be greater than 0!\n");
-        exit(EXIT_FAILURE);
-    }
-    Data->UserData.capacity = capacity;
-    Data->UserData.count = 0;
-    Data->UserData.entries = malloc(sizeof(UserDataEntry) * capacity);
-    for (size_t i = 0; i < capacity; i++) {
-        Data->UserData.entries[i].name = NULL;
-        Data->UserData.entries[i].ptr = NULL;
-    }
+    UserDataTable* Table = malloc(sizeof(UserDataTable));
+
+    Table->capacity = capacity;
+    Table->count = 0;
+    Table->chain = NULL;
+    Table->entries = malloc(sizeof(UserDataEntry) * Table->capacity);
+
+    return Table;
 }
 
 void AddUserData(aoiData* Data, char* name, void* data)

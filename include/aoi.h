@@ -8,6 +8,7 @@ TODO: Put introduction here
 #define AOI_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define DEFAULT_CAPACITY 8
 
@@ -70,30 +71,48 @@ typedef struct aoiData {
 
 void A_DoNothing(aoiData* Data);
 
-//
-uint16_t* ConvertBinding(BindingTable* Table, BindingEntry* binding);
-
 // aoi_binding.c
 uint64_t HashBinding(const char* name);
-BindingTable* InitBindingTable(uint64_t capacity);
+BindingTable* InitBindingData(uint64_t capacity);
 BindingTable* GetBindingChain(BindingTable* Table);
 void ResizeBindingTable(BindingTable* Table);
-void AddBinding(BindingTable* Table, const char* name, uint16_t keyElement);
+void AddBinding(BindingTable* Table, const char* name, uint16_t patternElement);
+uint16_t* ConvertBinding(BindingTable* Table, BindingEntry* binding);
+void SetActiveBindings(aoiData* Data);
+void ResetBindings(aoiData* Data);
 
 // aoi_action.c
-
+uint64_t HashAction(const char* name);
+ActionTable* InitActionData(uint64_t capacity);
+Action* NewAction(void (action)(aoiData*), const char* name, const char* desc);
+ActionTable* InitActionTable(uint64_t capacity);
+ActionTable* GetActionChain(ActionTable* Table);
+void ResizeActionTable(ActionTable* Table);
+bool DoesKeyMatchPattern(const uint16_t* key, const uint16_t* pattern, uint64_t len);
+ActionEntry* GetActionEntryFromPattern(ActionTable* Table, const uint16_t* pattern);
+void AddActionFromPattern(ActionTable* Table, Action* action, const uint16_t* pattern);
+void AddActionFromEntry(ActionTable* Table, ActionEntry* entry);
+void AddActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding);
+void SetActionFromKeyAction(ActionTable* Table, Action* action, const uint16_t* pattern);
+void SetActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding);
+void ActionHandler(aoiData* Data);
 
 // aoi_userdata.c
-
+uint64_t HashUserData(const char* name);
+UserDataTable* InitUserData(uint64_t capacity);
+void AddUserData(aoiData* Data, char* name, void* data);
+UserDataTable* InitUserDataTable(uint64_t capacity);
+UserDataTable* GetUserDataChain(UserDataTable* Table);
+void ResizeUserDataTable(UserDataTable* Table);
+void AddUserData_(UserDataTable* Table, const char* name, void* ptr);
+void AddUserDataWithStruct(UserDataTable* Table, UserDataEntry* entry);
+void* GetUserData(aoiData* Data, char* name);
 
 //
 aoiData* aoiInit(
     uint16_t UserDataCapacity, 
     uint16_t ActionDataCapacity, 
-    uint16_t BindingCapacity, 
-    uint64_t(*UserDataHashFunction)(const void* key), 
-    uint64_t(*ActionDataHashFunction)(const void* key),
-    uint64_t(*BindingDataHashFunction)(const void* key)
+    uint16_t BindingCapacity
 );
 void aoiCleanup(aoiData* Data);
 
