@@ -10,6 +10,26 @@ uint64_t HashAction(const char* name)
 
 }
 
+void InitActionData(aoiData* Data, uint16_t capacity)
+{
+    Data->ActionData.count = 0;
+    Data->ActionData.capacity = capacity;
+    Data->ActionData.entries = malloc(sizeof(ActionEntry) * capacity);
+    for (size_t i = 0; i < capacity; i++) {
+        Data->ActionData.entries[i].pattern = NULL;
+        Data->ActionData.entries[i].action = NULL;
+    }
+}
+
+Action* NewAction(void (action)(aoiData*), const char* name, const char* desc)
+{
+    Action* a = malloc(sizeof(Action));
+    Action tmp = {action, name, desc};
+    memcpy(a, &tmp, sizeof(Action));
+
+    return a;
+}
+
 ActionTable* InitActionTable(uint64_t capacity)
 {
     ActionTable* Table = malloc(sizeof(ActionTable));
@@ -91,10 +111,18 @@ bool DoesKeyMatchPattern(const uint16_t* key, const uint16_t* pattern, uint64_t 
     return true;
 }
 
-ActionEntry* GetActionEntryFromPattern(ActionTable* Table, const uint16_t* key)
+ActionEntry* GetActionEntryFromPattern(ActionTable* Table, const uint16_t* pattern)
 {
     for (size_t i = 0; i < Table->capacity; i++) {
-        if (DoesKeyMatchPattern(key, Table->entries[i].pattern, Table->capacity)) return &Table->entries[i];
+        if (DoesKeyMatchPattern(pattern, Table->entries[i].pattern, Table->capacity)) return &Table->entries[i];
+    }
+    return NULL;
+}
+
+ActionEntry* GetActionEntryFromCurrentBindings(aoiData* Data)
+{
+    for (size_t i = 0; i < Data->ActionData.capacity; i++) {
+        if (DoesKeyMatchPattern(*Data->ActiveBindings, Data->ActionData.entries[i].pattern, Data->ActionData.capacity)) return &Data->ActionData.entries[i];
     }
     return NULL;
 }
@@ -123,10 +151,10 @@ void AddActionFromEntry(ActionTable* Table, ActionEntry* entry)
     AddActionFromPattern(Table, entry->action, entry->pattern);
 }
 
-void AddActionFromBinding(ActionTable* Table, Action* action, BindingEntry* binding)
+void AddActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding)
 {
-    uint16_t* pattern = ConvertBinding(binding);
-    AddActionFromPattern(Table, action, pattern);
+    uint16_t* pattern = ConvertBinding(&Data->BindingData, binding);
+    AddActionFromPattern(&Data->ActionData, action, pattern);
 }
 
 //
@@ -141,10 +169,17 @@ void SetActionFromKeyAction(ActionTable* Table, Action* action, const uint16_t* 
     ptr->action = action;
 }
 
-void SetActionFromBinding(ActionTable* Table, Action* action, BindingEntry* binding)
+void SetActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding)
 {
-    uint16_t* pattern = ConvertBinding(binding);
-    SetActionFromKeyAction(Table, action, pattern);
+    uint16_t* pattern = ConvertBinding(&Data->BindingData, binding);
+    SetActionFromKeyAction(&Data->ActionData, action, pattern);
+}
+
+void ActionHandler(aoiData* Data)
+{
+    Action* a = GetActionEntryFromCurrentBindings(Data)->action;
+    printf("Action: %s\n", a->name);
+    if ((!a) || (!a->action)) A_DoNothing(Data); else a->action(Data);
 }
 
 #define AddAction(Table, Action, ...) \

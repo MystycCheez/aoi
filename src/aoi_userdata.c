@@ -9,6 +9,33 @@ uint64_t HashUserData(const char* name)
 
 }
 
+void InitUserData(aoiData* Data, uint16_t capacity)
+{
+    if (!capacity) {
+        fprintf(stderr, "Capacity must be greater than 0!\n");
+        exit(EXIT_FAILURE);
+    }
+    Data->UserData.capacity = capacity;
+    Data->UserData.count = 0;
+    Data->UserData.entries = malloc(sizeof(UserDataEntry) * capacity);
+    for (size_t i = 0; i < capacity; i++) {
+        Data->UserData.entries[i].name = NULL;
+        Data->UserData.entries[i].ptr = NULL;
+    }
+}
+
+void AddUserData(aoiData* Data, char* name, void* data)
+{
+    if (Data->UserData.count >= (Data->UserData.capacity * 0.75)) ResizeUserDataTable(&(Data->UserData));
+
+    uint64_t hash = HashUserData(name);
+    uint64_t index = hash % Data->UserData.capacity;
+
+    Data->UserData.entries[index].name = strdup(name);
+    Data->UserData.entries[index].ptr = data;
+    Data->UserData.count++;
+}
+
 UserDataTable* InitUserDataTable(uint64_t capacity)
 {
     UserDataTable* Table = malloc(sizeof(UserDataTable));
@@ -104,3 +131,18 @@ void AddUserDataWithStruct(UserDataTable* Table, UserDataEntry* entry)
     AddUserData_(Table, entry->name, entry->ptr);
 }
 
+void* GetUserData(aoiData* Data, char* name)
+{
+    static size_t err_count = 1;
+    
+    uint64_t hash = HashUserData(name);
+    uint64_t index = hash % Data->UserData.capacity;
+
+    if (index > Data->UserData.capacity) {
+        fprintf(stderr, "err count: %zu - ", err_count++);
+        fprintf(stderr, "index out of bounds!\n\n");
+        return NULL;
+    }
+    
+    return Data->UserData.entries[index].ptr;
+}

@@ -101,3 +101,38 @@ void AddBinding(BindingTable* Table, const char* name, uint16_t patternElement)
     // Data->ActiveBindings = realloc(Data->ActiveBindings, sizeof(uint16_t*) * Data->BindingData.capacity);
 }
 
+uint16_t* ConvertBinding(BindingTable* Table, BindingEntry* binding)
+{
+    uint16_t* b_list = calloc(Table->capacity, sizeof(uint16_t));
+
+    for (size_t i = 0; i < Table->capacity; i++) {
+        if (!binding[i].name) break;
+
+        uint64_t hash = HashBinding(binding[i].name);
+        uint64_t index = hash % Table->capacity;
+
+        b_list[index] = binding[i].patternElement;
+    }
+    return b_list;
+}
+
+void SetActiveBindings(aoiData* Data)
+{
+    for (size_t i = 0; i < Data->BindingData.capacity; i++) {
+        Data->ActiveBindings[i] = NULL;
+        if (!Data->BindingData.entries[i].name) continue;
+        // printf("key: %s\n", (char*)Data->BindingData.items[i].key);
+        // printf("key: %u\n", *(uint16_t*)Data->BindingData.items[i].value);
+        uint64_t hash = HashBinding(Data->BindingData.entries[i].name);
+        uint64_t index = hash % Data->BindingData.capacity;
+        Data->ActiveBindings[index] = &Data->BindingData.entries[index].patternElement;
+    }
+}
+
+void ResetBindings(aoiData* Data)
+{
+    for (uint64_t i = 0; i < Data->BindingData.capacity; i++) {
+        if (!Data->ActiveBindings[i]) continue;
+        *Data->ActiveBindings[i] = 0;
+    }
+}

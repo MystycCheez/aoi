@@ -71,7 +71,7 @@ typedef struct aoiData {
 void A_DoNothing(aoiData* Data);
 
 //
-uint16_t* ConvertBinding(BindingEntry* entry);
+uint16_t* ConvertBinding(BindingTable* Table, BindingEntry* binding);
 
 // aoi_binding.c
 uint64_t HashBinding(const char* name);
