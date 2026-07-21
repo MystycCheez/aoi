@@ -91,12 +91,12 @@ bool DoesKeyMatchPattern(const uint16_t* key, const uint16_t* pattern, uint64_t 
     return true;
 }
 
-bool KeyPatternLookup(ActionTable* Table, const uint16_t* key)
+ActionEntry* GetActionEntryFromPattern(ActionTable* Table, const uint16_t* key)
 {
     for (size_t i = 0; i < Table->capacity; i++) {
-        if (DoesKeyMatchPattern(key, Table->entries[i].pattern, Table->capacity)) return true;
+        if (DoesKeyMatchPattern(key, Table->entries[i].pattern, Table->capacity)) return &Table->entries[i];
     }
-    return false;
+    return NULL;
 }
 
 void AddActionFromPattern(ActionTable* Table, Action* action, const uint16_t* pattern)
@@ -131,27 +131,9 @@ void AddActionFromBinding(ActionTable* Table, Action* action, BindingEntry* bind
 
 //
 
-// ActionEntry* GetActionEntryFromKey(ActionTable* Table, const uint16_t* key)
-// {
-//     uint64_t hash = HashAction(key);
-//     uint64_t i = hash % Table->capacity;
-    
-//     if (Table->entries[i].pattern) return &Table->entries[i];
-//     ActionTable* tmp;
-//     while ((tmp = GetActionChain(Table))) {
-//         uint64_t hash = HashAction(key);
-//         uint64_t i = hash % tmp->capacity;
-//         if (tmp->entries[i].pattern) return &tmp->entries[i];
-//     }
-//     fprintf(stderr, "Error: Action not found.\n");
-//     return NULL;
-// }
-
-//
-
 void SetActionFromKeyAction(ActionTable* Table, Action* action, const uint16_t* pattern)
 {
-    ActionEntry* ptr = AddActionFromPattern(Table, pattern);
+    ActionEntry* ptr = GetActionEntryFromPattern(Table, pattern);
     if (!ptr) {
         fprintf(stderr, "Error: Action not found.\n");
         return;
@@ -162,6 +144,7 @@ void SetActionFromKeyAction(ActionTable* Table, Action* action, const uint16_t* 
 void SetActionFromBinding(ActionTable* Table, Action* action, BindingEntry* binding)
 {
     uint16_t* pattern = ConvertBinding(binding);
+    SetActionFromKeyAction(Table, action, pattern);
 }
 
 #define AddAction(Table, Action, ...) \
