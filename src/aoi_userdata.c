@@ -16,6 +16,17 @@ UserDataTable* InitUserData(uint64_t capacity)
     return Table;
 }
 
+UserDataTable* GetUserDataStructure(aoiData* Data)
+{
+    return &Data->UserData;
+}
+
+UserDataTable* GetUserDataChain(UserDataTable* Table)
+{
+    return Table->chain;
+}
+
+
 void AddUserData(aoiData* Data, char* name, void* data)
 {
     if (Data->UserData.count >= (Data->UserData.capacity * 0.75)) ResizeUserDataTable(&(Data->UserData));
@@ -28,26 +39,9 @@ void AddUserData(aoiData* Data, char* name, void* data)
     Data->UserData.count++;
 }
 
-UserDataTable* InitUserDataTable(uint64_t capacity)
-{
-    UserDataTable* Table = malloc(sizeof(UserDataTable));
-
-    Table->capacity = capacity;
-    Table->count = 0;
-    Table->chain = NULL;
-    Table->entries = malloc(sizeof(UserDataEntry) * Table->capacity);
-
-    return Table;
-}
-
-UserDataTable* GetUserDataChain(UserDataTable* Table)
-{
-    return Table->chain;
-}
-
 void ResizeUserDataTable(UserDataTable* Table)
 {
-    UserDataTable* list = InitUserDataTable(Table->capacity * 4);
+    UserDataTable* list = InitUserData(Table->capacity * 4);
     if (!list) {
         fprintf(stderr, "ResizeUserDataTable:\n");
         fprintf(stderr, "malloc failed!\n");
@@ -107,7 +101,7 @@ void AddUserData_(UserDataTable* Table, const char* name, void* ptr)
         if (Table->chain) {
             AddUserData_(Table->chain, name, ptr);
         } else {
-            Table->chain = InitUserDataTable(DEFAULT_CAPACITY);
+            Table->chain = InitUserData(DEFAULT_CAPACITY);
             AddUserData_(Table->chain, name, ptr);
         }
     } else {
@@ -123,18 +117,22 @@ void AddUserDataWithStruct(UserDataTable* Table, UserDataEntry* entry)
     AddUserData_(Table, entry->name, entry->ptr);
 }
 
-void* GetUserData(aoiData* Data, char* name)
+UserDataEntry* GetUserDataEntry(UserDataTable* Table, char* name)
 {
     static size_t err_count = 1;
     
     uint64_t hash = Hash(name);
-    uint64_t index = hash % Data->UserData.capacity;
+    uint64_t index = hash % Table->capacity;
 
-    if (index > Data->UserData.capacity) {
+    if (index > Table->capacity) {
         fprintf(stderr, "err count: %zu - ", err_count++);
         fprintf(stderr, "index out of bounds!\n\n");
         return NULL;
     }
     
-    return Data->UserData.entries[index].ptr;
+    UserDataEntry* entry = &Table->entries[index];
+    if (!entry) {
+        fprintf(stderr, "UserData Entry not found.\n");
+    }
+    return entry;
 }

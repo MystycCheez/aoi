@@ -17,6 +17,16 @@ ActionTable* InitActionData(uint64_t capacity)
     return Table;
 }
 
+ActionTable* GetActionStructure(aoiData* Data)
+{
+    return &Data->ActionData;
+}
+
+ActionTable* GetActionChain(ActionTable* Table)
+{
+    return Table->chain;
+}
+
 Action* NewAction(void (action)(aoiData*), const char* name, const char* desc)
 {
     Action* a = malloc(sizeof(Action));
@@ -26,26 +36,9 @@ Action* NewAction(void (action)(aoiData*), const char* name, const char* desc)
     return a;
 }
 
-ActionTable* InitActionTable(uint64_t capacity)
-{
-    ActionTable* Table = malloc(sizeof(ActionTable));
-
-    Table->capacity = capacity;
-    Table->count = 0;
-    Table->chain = NULL;
-    Table->entries = malloc(sizeof(ActionEntry) * Table->capacity);
-
-    return Table;
-}
-
-ActionTable* GetActionChain(ActionTable* Table)
-{
-    return Table->chain;
-}
-
 void ResizeActionTable(ActionTable* Table)
 {
-    ActionTable* list = InitActionTable(Table->capacity * 4);
+    ActionTable* list = InitActionData(Table->capacity * 4);
     if (!list) {
         fprintf(stderr, "ResizeActionTable:\n");
         fprintf(stderr, "malloc failed!\n");
@@ -131,7 +124,7 @@ void AddActionFromPattern(ActionTable* Table, Action* action, const uint16_t* pa
         if (Table->chain) {
             AddActionFromPattern(Table->chain, action, pattern);
         } else {
-            Table->chain = InitActionTable(DEFAULT_CAPACITY);
+            Table->chain = InitActionData(DEFAULT_CAPACITY);
             AddActionFromPattern(Table->chain, action, pattern);
         }
     } else {
@@ -178,5 +171,22 @@ void ActionHandler(aoiData* Data)
     if ((!a) || (!a->action)) A_DoNothing(Data); else a->action(Data);
 }
 
-#define AddAction(Table, Action, ...) \
-    AddActionWithBinding(Table, Action, (Binding[]){__VA_ARGS__, {NULL, 0}})
+ActionEntry* GetActionEntry(ActionTable* Table, char* name)
+{
+    static size_t err_count = 1;
+    
+    uint64_t hash = Hash(name);
+    uint64_t index = hash % Table->capacity;
+
+    if (index > Table->capacity) {
+        fprintf(stderr, "err count: %zu - ", err_count++);
+        fprintf(stderr, "index out of bounds!\n\n");
+        return NULL;
+    }
+    
+    ActionEntry* entry = &Table->entries[index];
+    if (!entry) {
+        fprintf(stderr, "Action Entry not found.\n");
+    }
+    return entry;
+}

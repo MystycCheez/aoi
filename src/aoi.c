@@ -40,6 +40,7 @@ void aoiCleanup(aoiData* Data)
     free(Data);
 }
 
+// Modified from https://github.com/haipome/fnv
 uint64_t Hash(const char* name)
 {
     unsigned long len = strlen(name);

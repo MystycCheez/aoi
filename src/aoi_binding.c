@@ -16,6 +16,11 @@ BindingTable* InitBindingData(uint64_t capacity)
     return Table;
 }
 
+BindingTable* GetBindingStructure(aoiData* Data)
+{
+    return &Data->BindingData;
+}
+
 BindingTable* GetBindingChain(BindingTable* Table)
 {
     return Table->chain;
@@ -75,20 +80,20 @@ void ResizeBindingTable(BindingTable* Table)
     free(tmp);
 }
 
-void AddBinding(BindingTable* Table, const char* name, uint16_t patternElement)
+void AddBinding(BindingTable* Table, const char* name)
 {
     uint64_t hash = Hash(name);
     uint64_t i = hash % Table->capacity;
     if (Table->entries[i].name) {
         if (Table->chain) {
-            AddBinding(Table->chain, name, patternElement);
+            AddBinding(Table->chain, name);
         } else {
             Table->chain = InitBindingData(DEFAULT_CAPACITY);
-            AddBinding(Table->chain, name, patternElement);
+            AddBinding(Table->chain, name);
         }
     } else {
         Table->entries[i].name = name;
-        Table->entries[i].patternElement = patternElement;
+        Table->entries[i].patternElement = 0;
     }
     Table->count++;
     if (Table->count >= (Table->capacity * 0.75)) ResizeBindingTable(Table);
@@ -96,9 +101,28 @@ void AddBinding(BindingTable* Table, const char* name, uint16_t patternElement)
     // Data->ActiveBindings = realloc(Data->ActiveBindings, sizeof(uint16_t*) * Data->BindingData.capacity);
 }
 
-uint16_t* ConvertBinding(BindingTable* Table, BindingEntry* binding)
+BindingEntry* GetBindingEntry(BindingTable* Table, char* name)
 {
-    uint16_t* b_list = calloc(Table->capacity, sizeof(uint16_t));
+    static size_t err_count = 1;
+    
+    uint64_t hash = Hash(name);
+    uint64_t index = hash % Table->capacity;
+
+    if (index > Table->capacity) {
+        fprintf(stderr, "err count: %zu - ", err_count++);
+        fprintf(stderr, "index out of bounds!\n\n");
+        return NULL;
+    }
+    BindingEntry* entry = &Table->entries[index];
+    if (!entry) {
+        fprintf(stderr, "Binding Entry not found.\n");
+    }
+    return entry;
+}
+
+uint16_t* ConvertBindingsToPattern(BindingTable* Table, BindingEntry binding[])
+{
+    uint16_t* pattern = calloc(Table->capacity, sizeof(uint16_t));
 
     for (size_t i = 0; i < Table->capacity; i++) {
         if (!binding[i].name) break;
@@ -106,21 +130,40 @@ uint16_t* ConvertBinding(BindingTable* Table, BindingEntry* binding)
         uint64_t hash = Hash(binding[i].name);
         uint64_t index = hash % Table->capacity;
 
-        b_list[index] = binding[i].patternElement;
+        pattern[index] = binding[i].patternElement;
     }
-    return b_list;
+    return pattern;
 }
 
-void SetActiveBindings(aoiData* Data)
+uint16_t* ConvertBindingsToFuzzyPattern(BindingTable* Table, BindingEntry binding[])
+{
+    uint16_t* pattern = calloc(Table->capacity, sizeof(uint16_t));
+    memset(pattern, PATTERN_IGNORE, Table->capacity);
+
+    for (size_t i = 0; i < Table->capacity; i++) {
+        if (!binding[i].name) break;
+
+        uint64_t hash = Hash(binding[i].name);
+        uint64_t index = hash % Table->capacity;
+
+        pattern[index] = binding[i].patternElement;
+    }
+    return pattern;
+}
+
+void SetBindings_(BindingTable* Table, BindingEntry binding[])
+{
+    uint16_t* pattern = ConvertBindingsToFuzzyPattern(Table, binding);
+    for (size_t i = 0; i < Table->capacity; i++) {
+        if (pattern[i] == PATTERN_IGNORE) continue;
+        Table->entries[i].patternElement = pattern[i];
+    }
+}
+
+void SetActiveBindings(aoiData *Data, BindingEntry* entries)
 {
     for (size_t i = 0; i < Data->BindingData.capacity; i++) {
-        Data->ActiveBindings[i] = NULL;
-        if (!Data->BindingData.entries[i].name) continue;
-        // printf("key: %s\n", (char*)Data->BindingData.items[i].key);
-        // printf("key: %u\n", *(uint16_t*)Data->BindingData.items[i].value);
-        uint64_t hash = Hash(Data->BindingData.entries[i].name);
-        uint64_t index = hash % Data->BindingData.capacity;
-        Data->ActiveBindings[index] = &Data->BindingData.entries[index].patternElement;
+        Data->ActiveBindings[i] = &entries[i].patternElement;
     }
 }
 
