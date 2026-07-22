@@ -4,11 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-uint64_t HashBinding(const char* name)
-{
-
-}
-
 BindingTable* InitBindingData(uint64_t capacity)
 {
     BindingTable* Table = malloc(sizeof(BindingTable));
@@ -82,7 +77,7 @@ void ResizeBindingTable(BindingTable* Table)
 
 void AddBinding(BindingTable* Table, const char* name, uint16_t patternElement)
 {
-    uint64_t hash = HashBinding(name);
+    uint64_t hash = Hash(name);
     uint64_t i = hash % Table->capacity;
     if (Table->entries[i].name) {
         if (Table->chain) {
@@ -108,7 +103,7 @@ uint16_t* ConvertBinding(BindingTable* Table, BindingEntry* binding)
     for (size_t i = 0; i < Table->capacity; i++) {
         if (!binding[i].name) break;
 
-        uint64_t hash = HashBinding(binding[i].name);
+        uint64_t hash = Hash(binding[i].name);
         uint64_t index = hash % Table->capacity;
 
         b_list[index] = binding[i].patternElement;
@@ -123,7 +118,7 @@ void SetActiveBindings(aoiData* Data)
         if (!Data->BindingData.entries[i].name) continue;
         // printf("key: %s\n", (char*)Data->BindingData.items[i].key);
         // printf("key: %u\n", *(uint16_t*)Data->BindingData.items[i].value);
-        uint64_t hash = HashBinding(Data->BindingData.entries[i].name);
+        uint64_t hash = Hash(Data->BindingData.entries[i].name);
         uint64_t index = hash % Data->BindingData.capacity;
         Data->ActiveBindings[index] = &Data->BindingData.entries[index].patternElement;
     }

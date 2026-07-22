@@ -72,7 +72,6 @@ typedef struct aoiData {
 void A_DoNothing(aoiData* Data);
 
 // aoi_binding.c
-uint64_t HashBinding(const char* name);
 BindingTable* InitBindingData(uint64_t capacity);
 BindingTable* GetBindingChain(BindingTable* Table);
 void ResizeBindingTable(BindingTable* Table);
@@ -82,7 +81,6 @@ void SetActiveBindings(aoiData* Data);
 void ResetBindings(aoiData* Data);
 
 // aoi_action.c
-uint64_t HashAction(const char* name);
 ActionTable* InitActionData(uint64_t capacity);
 Action* NewAction(void (action)(aoiData*), const char* name, const char* desc);
 ActionTable* InitActionTable(uint64_t capacity);
@@ -98,7 +96,6 @@ void SetActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding);
 void ActionHandler(aoiData* Data);
 
 // aoi_userdata.c
-uint64_t HashUserData(const char* name);
 UserDataTable* InitUserData(uint64_t capacity);
 void AddUserData(aoiData* Data, char* name, void* data);
 UserDataTable* InitUserDataTable(uint64_t capacity);
@@ -115,6 +112,7 @@ aoiData* aoiInit(
     uint16_t BindingCapacity
 );
 void aoiCleanup(aoiData* Data);
+uint64_t Hash(const char* name);
 
 #define SetAction(aoiData, Action, ...) \
     SetAction_(aoiData, Action, (Binding[]){__VA_ARGS__, {NULL, 0}})

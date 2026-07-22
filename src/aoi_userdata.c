@@ -4,11 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-uint64_t HashUserData(const char* name)
-{
-
-}
-
 UserDataTable* InitUserData(uint64_t capacity)
 {
     UserDataTable* Table = malloc(sizeof(UserDataTable));
@@ -25,7 +20,7 @@ void AddUserData(aoiData* Data, char* name, void* data)
 {
     if (Data->UserData.count >= (Data->UserData.capacity * 0.75)) ResizeUserDataTable(&(Data->UserData));
 
-    uint64_t hash = HashUserData(name);
+    uint64_t hash = Hash(name);
     uint64_t index = hash % Data->UserData.capacity;
 
     Data->UserData.entries[index].name = strdup(name);
@@ -106,7 +101,7 @@ void ResizeUserDataTable(UserDataTable* Table)
 
 void AddUserData_(UserDataTable* Table, const char* name, void* ptr)
 {
-    uint64_t hash = HashUserData(name);
+    uint64_t hash = Hash(name);
     uint64_t i = hash % Table->capacity;
     if (Table->entries[i].name) {
         if (Table->chain) {
@@ -132,7 +127,7 @@ void* GetUserData(aoiData* Data, char* name)
 {
     static size_t err_count = 1;
     
-    uint64_t hash = HashUserData(name);
+    uint64_t hash = Hash(name);
     uint64_t index = hash % Data->UserData.capacity;
 
     if (index > Data->UserData.capacity) {

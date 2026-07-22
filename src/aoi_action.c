@@ -5,11 +5,6 @@
 #include <string.h>
 #include <stdbool.h>
 
-uint64_t HashAction(const char* name)
-{
-
-}
-
 ActionTable* InitActionData(uint64_t capacity)
 {
     ActionTable* Table = malloc(sizeof(ActionTable));
@@ -130,7 +125,7 @@ ActionEntry* GetActionEntryFromCurrentBindings(aoiData* Data)
 
 void AddActionFromPattern(ActionTable* Table, Action* action, const uint16_t* pattern)
 {
-    uint64_t hash = HashAction(action->name);
+    uint64_t hash = Hash(action->name);
     uint64_t i = hash % Table->capacity;
     if (Table->entries[i].pattern) {
         if (Table->chain) {
