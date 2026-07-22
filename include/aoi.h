@@ -78,7 +78,9 @@ BindingTable* GetBindingStructure(aoiData* Data);
 BindingTable* GetBindingChain(BindingTable* Table);
 void ResizeBindingTable(BindingTable* Table);
 void AddBinding(BindingTable* Table, const char* name);
-uint16_t* ConvertBinding(BindingTable* Table, BindingEntry* binding);
+BindingEntry* GetBindingEntry(BindingTable* Table, char* name);
+uint16_t* ConvertBindingsToPattern(BindingTable* Table, BindingEntry binding[]);
+uint16_t* ConvertBindingsToFuzzyPattern(BindingTable* Table, BindingEntry binding[]);
 void SetBindings_(BindingTable* Table, BindingEntry binding[]);
 void SetActiveBindings(aoiData *Data, BindingEntry* entries);
 void ResetBindings(aoiData* Data);
@@ -98,6 +100,7 @@ void AddActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding);
 void SetActionFromKeyAction(ActionTable* Table, Action* action, const uint16_t* pattern);
 void SetActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding);
 void ActionHandler(aoiData* Data);
+ActionEntry* GetActionEntry(ActionTable* Table, char* name);
 
 // aoi_userdata.c
 UserDataTable* InitUserData(uint64_t capacity);
@@ -107,7 +110,7 @@ void AddUserData(aoiData* Data, char* name, void* data);
 void ResizeUserDataTable(UserDataTable* Table);
 void AddUserData_(UserDataTable* Table, const char* name, void* ptr);
 void AddUserDataWithStruct(UserDataTable* Table, UserDataEntry* entry);
-UserDataEntry* GetUserData(UserDataTable* UserData, char* name);
+UserDataEntry* GetUserDataEntry(UserDataTable* Table, char* name);
 
 //
 aoiData* aoiInit(

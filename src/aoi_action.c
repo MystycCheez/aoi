@@ -142,7 +142,7 @@ void AddActionFromEntry(ActionTable* Table, ActionEntry* entry)
 
 void AddActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding)
 {
-    uint16_t* pattern = ConvertBinding(&Data->BindingData, binding);
+    uint16_t* pattern = ConvertBindingsToFuzzyPattern(&Data->BindingData, binding);
     AddActionFromPattern(&Data->ActionData, action, pattern);
 }
 
@@ -160,7 +160,7 @@ void SetActionFromKeyAction(ActionTable* Table, Action* action, const uint16_t* 
 
 void SetActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding)
 {
-    uint16_t* pattern = ConvertBinding(&Data->BindingData, binding);
+    uint16_t* pattern = ConvertBindingsToFuzzyPattern(&Data->BindingData, binding);
     SetActionFromKeyAction(&Data->ActionData, action, pattern);
 }
 
