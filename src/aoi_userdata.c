@@ -13,6 +13,11 @@ UserDataTable* InitUserData(uint64_t capacity)
     Table->chain = NULL;
     Table->entries = malloc(sizeof(UserDataEntry) * Table->capacity);
 
+    for (uint64_t i = 0; i < Table->capacity; i++) {
+        Table->entries[i].name = NULL;
+        Table->entries[i].ptr = NULL;
+    }
+
     return Table;
 }
 
@@ -25,7 +30,6 @@ UserDataTable* GetUserDataChain(UserDataTable* Table)
 {
     return Table->chain;
 }
-
 
 void AddUserData(aoiData* Data, char* name, void* data)
 {
@@ -49,18 +53,23 @@ void ResizeUserDataTable(UserDataTable* Table)
     }
 
     size_t index = 0;
-    for (size_t i = 0; i < Table->count; i++) {
-        if (!Table->entries[index++].name) continue;
-        list->entries[list->count++].name = Table->entries[index++].name;
-        list->entries[list->count++].ptr = Table->entries[index++].ptr;
+    for (size_t i = 0; i < Table->capacity; i++) {
+        if (Table->entries[index].name) {
+            list->entries[list->count].name = Table->entries[index].name;
+            list->entries[list->count++].ptr = Table->entries[index].ptr;
+        }
+        index++;
     }
 
-    UserDataTable* Chain = NULL;
-    while ((Chain = GetUserDataChain(Table))) {
+    UserDataTable* Chain = Table;
+    while ((Chain = GetUserDataChain(Chain))) {
         index = 0;
         for (size_t i = 0; i < Chain->count; i++) {
-            list->entries[list->count++].name = Chain->entries[index++].name;
-            list->entries[list->count++].ptr = Chain->entries[index++].ptr;
+            if (Chain->entries[index].name) {
+                list->entries[list->count].name = Chain->entries[index].name;
+                list->entries[list->count++].ptr = Chain->entries[index].ptr;
+            }
+            index++;
         }
     }
 
@@ -104,11 +113,12 @@ void AddUserData_(UserDataTable* Table, const char* name, void* ptr)
             Table->chain = InitUserData(DEFAULT_CAPACITY);
             AddUserData_(Table->chain, name, ptr);
         }
+        Table->chain->count++;
     } else {
         Table->entries[i].name = name;
         Table->entries[i].ptr = ptr;
+        Table->count++;
     }
-    Table->count++;
     if (Table->count >= (Table->capacity * 0.75)) ResizeUserDataTable(Table);
 }
 

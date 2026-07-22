@@ -2,10 +2,13 @@
 set -e
 
 echo "clang"
-clang -O3 -c src/aoi.c -o build/aoi.o -Iinclude/
+clang -fsanitize=address -g -O0 -c src/aoi.c -o build/aoi.o -Iinclude/
+clang -fsanitize=address -g -O0 -c src/aoi_action.c -o build/aoi_action.o -Iinclude/ 
+clang -fsanitize=address -g -O0 -c src/aoi_userdata.c -o build/aoi_userdata.o -Iinclude/
+clang -fsanitize=address -g -O0 -c src/aoi_binding.c -o build/aoi_binding.o -Iinclude/
 
 echo "make archive"
-ar rcs build/libaoi.a build/aoi.o
+ar rcs build/libaoi.a build/*.o
 
 echo "remove object files"
 rm build/*.o

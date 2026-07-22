@@ -14,6 +14,11 @@ ActionTable* InitActionData(uint64_t capacity)
     Table->chain = NULL;
     Table->entries = malloc(sizeof(ActionEntry) * Table->capacity);
 
+    for (uint64_t i = 0; i < Table->capacity; i++) {
+        Table->entries[i].action = NULL;
+        Table->entries[i].pattern = NULL;
+    }
+
     return Table;
 }
 
@@ -46,24 +51,30 @@ void ResizeActionTable(ActionTable* Table)
     }
 
     size_t index = 0;
-    for (size_t i = 0; i < Table->count; i++) {
-        if (!Table->entries[index++].pattern) continue;
-        list->entries[list->count++].pattern = Table->entries[index++].pattern;
-        list->entries[list->count++].action = Table->entries[index++].action;
+    for (size_t i = 0; i < Table->capacity; i++) {
+        if (Table->entries[index].pattern) {
+            list->entries[list->count].pattern = Table->entries[index].pattern;
+            list->entries[list->count++].action = Table->entries[index].action;
+        }
+        index++;
     }
 
-    ActionTable* Chain = NULL;
-    while ((Chain = GetActionChain(Table))) {
+    ActionTable* Chain = Table;
+    while ((Chain = GetActionChain(Chain))) {
         index = 0;
         for (size_t i = 0; i < Chain->count; i++) {
-            list->entries[list->count++].pattern = Chain->entries[index++].pattern;
-            list->entries[list->count++].action = Chain->entries[index++].action;
+            if (Chain->entries[index].pattern) {
+                list->entries[list->count].pattern = Chain->entries[index].pattern;
+                list->entries[list->count++].action = Chain->entries[index].action;
+            }
+            index++;
+            printf("%zu\n", list->count);
         }
     }
 
     uint64_t newCap = list->count * 1.5 * 1.5;
 
-    ActionEntry* tmp = malloc(sizeof(ActionEntry) * newCap);
+    ActionTable* tmp = InitActionData(newCap);
     if (!tmp) {
         fprintf(stderr, "ResizeActionTable:\n");
         fprintf(stderr, "malloc failed!\n");
@@ -71,9 +82,8 @@ void ResizeActionTable(ActionTable* Table)
     }
 
     index = 0;
-    for (size_t i = 0; list->entries[index].pattern; i++) {
-        tmp[i].pattern = list->entries[index].pattern;
-        tmp[i].action = list->entries[index].action;
+    for (size_t i = 0; i < newCap; i++) {
+        AddActionFromEntry(tmp, &list->entries[i]);
     }
     free(list->entries);
     free(list);
@@ -86,7 +96,8 @@ void ResizeActionTable(ActionTable* Table)
         exit(EXIT_FAILURE);
     }
 
-    mempcpy(Table->entries, tmp, sizeof(ActionEntry) * Table->capacity);
+    mempcpy(Table->entries, tmp->entries, sizeof(ActionEntry) * Table->capacity);
+    free(tmp->entries);
     free(tmp);
 }
 
@@ -127,11 +138,12 @@ void AddActionFromPattern(ActionTable* Table, Action* action, const uint16_t* pa
             Table->chain = InitActionData(DEFAULT_CAPACITY);
             AddActionFromPattern(Table->chain, action, pattern);
         }
+        Table->chain->count++;
     } else {
         Table->entries[i].pattern = pattern;
         Table->entries[i].action = action;
+        Table->count++;
     }
-    Table->count++;
     if (Table->count >= (Table->capacity * 0.75)) ResizeActionTable(Table);
 }
 

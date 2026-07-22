@@ -13,6 +13,11 @@ BindingTable* InitBindingData(uint64_t capacity)
     Table->chain = NULL;
     Table->entries = malloc(sizeof(BindingEntry) * Table->capacity);
 
+    for (uint64_t i = 0; i < Table->capacity; i++) {
+        Table->entries[i].name = NULL;
+        Table->entries[i].patternElement = 0;
+    }
+
     return Table;
 }
 
@@ -36,18 +41,23 @@ void ResizeBindingTable(BindingTable* Table)
     }
 
     size_t index = 0;
-    for (size_t i = 0; i < Table->count; i++) {
-        if (!Table->entries[index++].name) continue;
-        list->entries[list->count++].name = Table->entries[index++].name;
-        list->entries[list->count++].patternElement = Table->entries[index++].patternElement;
+    for (size_t i = 0; i < Table->capacity; i++) {
+        if (Table->entries[index].name) {
+            list->entries[list->count].name = Table->entries[index].name;
+            list->entries[list->count++].patternElement = Table->entries[index].patternElement;
+        }
+        index++;
     }
 
-    BindingTable* Chain = NULL;
-    while ((Chain = GetBindingChain(Table))) {
+    BindingTable* Chain = Table;
+    while ((Chain = GetBindingChain(Chain))) {
         index = 0;
         for (size_t i = 0; i < Chain->count; i++) {
-            list->entries[list->count++].name = Chain->entries[index++].name;
-            list->entries[list->count++].patternElement = Chain->entries[index++].patternElement;
+            if (Chain->entries[index].name) {
+                list->entries[list->count].name = Chain->entries[index].name;
+                list->entries[list->count++].patternElement = Chain->entries[index].patternElement;
+            }
+            index++;
         }
     }
 
@@ -91,11 +101,12 @@ void AddBinding(BindingTable* Table, const char* name)
             Table->chain = InitBindingData(DEFAULT_CAPACITY);
             AddBinding(Table->chain, name);
         }
+        Table->chain->count++;
     } else {
         Table->entries[i].name = name;
         Table->entries[i].patternElement = 0;
+        Table->count++;
     }
-    Table->count++;
     if (Table->count >= (Table->capacity * 0.75)) ResizeBindingTable(Table);
     // Consider resizing ActiveBindings here if still used
     // Data->ActiveBindings = realloc(Data->ActiveBindings, sizeof(uint16_t*) * Data->BindingData.capacity);
