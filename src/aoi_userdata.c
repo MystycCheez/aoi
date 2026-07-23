@@ -64,7 +64,7 @@ void ResizeUserDataTable(UserDataTable* Table)
     UserDataTable* Chain = Table;
     while ((Chain = GetUserDataChain(Chain))) {
         index = 0;
-        for (size_t i = 0; i < Chain->count; i++) {
+        for (size_t i = 0; i < Chain->capacity; i++) {
             if (Chain->entries[index].name) {
                 list->entries[list->count].name = Chain->entries[index].name;
                 list->entries[list->count++].ptr = Chain->entries[index].ptr;
@@ -113,7 +113,6 @@ void AddUserData_(UserDataTable* Table, const char* name, void* ptr)
             Table->chain = InitUserData(DEFAULT_CAPACITY);
             AddUserData_(Table->chain, name, ptr);
         }
-        Table->chain->count++;
     } else {
         Table->entries[i].name = name;
         Table->entries[i].ptr = ptr;

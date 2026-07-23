@@ -53,6 +53,8 @@ void ResizeActionTable(ActionTable* Table)
     size_t index = 0;
     for (size_t i = 0; i < Table->capacity; i++) {
         if (Table->entries[index].pattern) {
+            printf("patern: %p\n", Table->entries[index].pattern);
+            printf("action: %p\n", Table->entries[index].action);
             list->entries[list->count].pattern = Table->entries[index].pattern;
             list->entries[list->count++].action = Table->entries[index].action;
         }
@@ -62,13 +64,12 @@ void ResizeActionTable(ActionTable* Table)
     ActionTable* Chain = Table;
     while ((Chain = GetActionChain(Chain))) {
         index = 0;
-        for (size_t i = 0; i < Chain->count; i++) {
+        for (size_t i = 0; i < Chain->capacity; i++) {
             if (Chain->entries[index].pattern) {
                 list->entries[list->count].pattern = Chain->entries[index].pattern;
                 list->entries[list->count++].action = Chain->entries[index].action;
             }
             index++;
-            printf("%zu\n", list->count);
         }
     }
 
@@ -103,10 +104,13 @@ void ResizeActionTable(ActionTable* Table)
 
 bool DoesKeyMatchPattern(const uint16_t* key, const uint16_t* pattern, uint64_t len)
 {
+    if (!pattern) return false;
     size_t index = 0;
     while (index < len) {
-        if (pattern[index] == UINT16_MAX) continue;
-        if (key[index] != pattern[index]) return false;
+        if (pattern[index] != UINT16_MAX) {
+            if (key[index] != pattern[index]) return false;
+        }
+        index++;
     }
     return true;
 }
@@ -138,7 +142,6 @@ void AddActionFromPattern(ActionTable* Table, Action* action, const uint16_t* pa
             Table->chain = InitActionData(DEFAULT_CAPACITY);
             AddActionFromPattern(Table->chain, action, pattern);
         }
-        Table->chain->count++;
     } else {
         Table->entries[i].pattern = pattern;
         Table->entries[i].action = action;
@@ -178,9 +181,13 @@ void SetActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding)
 
 void ActionHandler(aoiData* Data)
 {
-    Action* a = GetActionEntryFromCurrentBindings(Data)->action;
-    printf("Action: %s\n", a->name);
-    if ((!a) || (!a->action)) A_DoNothing(Data); else a->action(Data);
+    ActionEntry* entry = GetActionEntryFromCurrentBindings(Data);
+    if (entry) {
+        if (entry->action) {
+            entry->action->action(Data);
+            printf("Action: %s\n", entry->action->name);
+        } 
+    } 
 }
 
 ActionEntry* GetActionEntry(ActionTable* Table, char* name)

@@ -52,7 +52,7 @@ void ResizeBindingTable(BindingTable* Table)
     BindingTable* Chain = Table;
     while ((Chain = GetBindingChain(Chain))) {
         index = 0;
-        for (size_t i = 0; i < Chain->count; i++) {
+        for (size_t i = 0; i < Chain->capacity; i++) {
             if (Chain->entries[index].name) {
                 list->entries[list->count].name = Chain->entries[index].name;
                 list->entries[list->count++].patternElement = Chain->entries[index].patternElement;
@@ -101,7 +101,6 @@ void AddBinding(BindingTable* Table, const char* name)
             Table->chain = InitBindingData(DEFAULT_CAPACITY);
             AddBinding(Table->chain, name);
         }
-        Table->chain->count++;
     } else {
         Table->entries[i].name = name;
         Table->entries[i].patternElement = 0;
@@ -171,10 +170,10 @@ void SetBindings_(BindingTable* Table, BindingEntry binding[])
     }
 }
 
-void SetActiveBindings(aoiData *Data, BindingEntry* entries)
+void SetActiveBindings(aoiData *Data)
 {
     for (size_t i = 0; i < Data->BindingData.capacity; i++) {
-        Data->ActiveBindings[i] = &entries[i].patternElement;
+        Data->ActiveBindings[i] = &Data->BindingData.entries[i].patternElement;
     }
 }
 
