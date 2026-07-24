@@ -107,10 +107,15 @@ bool DoesKeyMatchPattern(const uint16_t* key, const uint16_t* pattern, uint64_t 
 {
     if (!pattern) return false;
     size_t index = 0;
+    // for (size_t i = 0; i < len; i++) {
+    //     printf("%u ", key[i]);
+    // }
+    // printf("\n");
 
     while (index < len) {
         if (pattern[index] != PATTERN_IGNORE) {
-            if (key[index] != pattern[index]) return false;
+            printf("%u, %u\n", pattern[index], key[index]);
+            if (pattern[index] != key[index]) return false;
         }
         index++;
     }
@@ -127,9 +132,19 @@ ActionEntry* GetActionEntryFromPattern(ActionTable* Table, const uint16_t* patte
 
 ActionEntry* GetActionEntryFromCurrentBindings(aoiData* Data)
 {
-    for (size_t i = 0; i < Data->ActionData->capacity; i++) {
-        if (DoesKeyMatchPattern(*Data->ActiveBindings, Data->ActionData->entries[i].pattern, Data->ActionData->patternLen)) return &Data->ActionData->entries[i];
+    uint16_t* tmp = malloc(sizeof(uint16_t) * Data->BindingData->capacity);
+    for (uint64_t i = 0; i < Data->BindingData->capacity; i++) {
+        tmp[i] = *Data->ActiveBindings[i];
     }
+
+    for (size_t i = 0; i < Data->ActionData->capacity; i++) {
+        if (DoesKeyMatchPattern(tmp, Data->ActionData->entries[i].pattern, Data->ActionData->patternLen)) {
+            return &Data->ActionData->entries[i];
+            free(tmp);
+        }
+    }
+    printf("Nope\n");
+    free(tmp);
     return NULL;
 }
 
