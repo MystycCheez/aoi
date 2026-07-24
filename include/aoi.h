@@ -43,6 +43,7 @@ typedef struct ActionTable {
     struct ActionTable* chain;
     uint64_t count;
     uint64_t capacity;
+    uint64_t patternLen;
 } ActionTable;
 
 typedef struct UserDataEntry {
@@ -65,9 +66,9 @@ typedef struct Action {
 
 typedef struct aoiData {
     uint16_t** ActiveBindings;
-    BindingTable BindingData;
-    ActionTable ActionData;
-    UserDataTable UserData;
+    BindingTable* BindingData;
+    ActionTable* ActionData;
+    UserDataTable* UserData;
 } aoiData;
 
 void A_DoNothing(aoiData* Data);
@@ -76,8 +77,8 @@ void A_DoNothing(aoiData* Data);
 BindingTable* InitBindingData(uint64_t capacity);
 BindingTable* GetBindingStructure(aoiData* Data);
 BindingTable* GetBindingChain(BindingTable* Table);
-void ResizeBindingTable(BindingTable* Table);
-void AddBinding(BindingTable* Table, const char* name);
+void ResizeBindingTable(aoiData* Data, BindingTable* Table);
+void AddBinding(aoiData* Data, BindingTable* Table, const char* name);
 BindingEntry* GetBindingEntry(BindingTable* Table, char* name);
 uint16_t* ConvertBindingsToPattern(BindingTable* Table, BindingEntry binding[]);
 uint16_t* ConvertBindingsToFuzzyPattern(BindingTable* Table, BindingEntry binding[]);
@@ -86,7 +87,7 @@ void SetActiveBindings(aoiData *Data);
 void ResetBindings(aoiData* Data);
 
 // aoi_action.c
-ActionTable* InitActionData(uint64_t capacity);
+ActionTable* InitActionData(uint64_t capacity, uint64_t pattenLen);
 ActionTable* GetActionStructure(aoiData* Data);
 ActionTable* GetActionChain(ActionTable* Table);
 Action* NewAction(void (action)(aoiData*), const char* name, const char* desc);
@@ -114,12 +115,13 @@ UserDataEntry* GetUserDataEntry(UserDataTable* Table, char* name);
 
 //
 aoiData* aoiInit(
-    uint16_t UserDataCapacity, 
-    uint16_t ActionDataCapacity, 
-    uint16_t BindingCapacity
+    uint64_t UserDataCapacity, 
+    uint64_t ActionDataCapacity, 
+    uint64_t BindingCapacity
 );
 void aoiCleanup(aoiData* Data);
-uint64_t Hash(const char* name);
+uint64_t HashStr(const char* name);
+uint64_t HashPattern(const uint16_t* pattern, uint64_t len);
 
 #define AddAction(Table, Action, ...) \
     AddActionFromBinding(Table, Action, (BindingEntry[]){__VA_ARGS__, {NULL, 0}})

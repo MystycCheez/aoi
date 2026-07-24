@@ -23,7 +23,7 @@ UserDataTable* InitUserData(uint64_t capacity)
 
 UserDataTable* GetUserDataStructure(aoiData* Data)
 {
-    return &Data->UserData;
+    return Data->UserData;
 }
 
 UserDataTable* GetUserDataChain(UserDataTable* Table)
@@ -33,14 +33,14 @@ UserDataTable* GetUserDataChain(UserDataTable* Table)
 
 void AddUserData(aoiData* Data, char* name, void* data)
 {
-    if (Data->UserData.count >= (Data->UserData.capacity * 0.75)) ResizeUserDataTable(&(Data->UserData));
+    if (Data->UserData->count >= (Data->UserData->capacity * 0.75)) ResizeUserDataTable(Data->UserData);
 
-    uint64_t hash = Hash(name);
-    uint64_t index = hash % Data->UserData.capacity;
+    uint64_t hash = HashStr(name);
+    uint64_t index = hash % Data->UserData->capacity;
 
-    Data->UserData.entries[index].name = strdup(name);
-    Data->UserData.entries[index].ptr = data;
-    Data->UserData.count++;
+    Data->UserData->entries[index].name = strdup(name);
+    Data->UserData->entries[index].ptr = data;
+    Data->UserData->count++;
 }
 
 void ResizeUserDataTable(UserDataTable* Table)
@@ -104,7 +104,7 @@ void ResizeUserDataTable(UserDataTable* Table)
 
 void AddUserData_(UserDataTable* Table, const char* name, void* ptr)
 {
-    uint64_t hash = Hash(name);
+    uint64_t hash = HashStr(name);
     uint64_t i = hash % Table->capacity;
     if (Table->entries[i].name) {
         if (Table->chain) {
@@ -130,7 +130,7 @@ UserDataEntry* GetUserDataEntry(UserDataTable* Table, char* name)
 {
     static size_t err_count = 1;
     
-    uint64_t hash = Hash(name);
+    uint64_t hash = HashStr(name);
     uint64_t index = hash % Table->capacity;
 
     if (index > Table->capacity) {

@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-ActionTable* InitActionData(uint64_t capacity)
+ActionTable* InitActionData(uint64_t capacity, uint64_t pattenLen)
 {
     ActionTable* Table = malloc(sizeof(ActionTable));
 
@@ -13,6 +13,7 @@ ActionTable* InitActionData(uint64_t capacity)
     Table->count = 0;
     Table->chain = NULL;
     Table->entries = malloc(sizeof(ActionEntry) * Table->capacity);
+    Table->patternLen = pattenLen;
 
     for (uint64_t i = 0; i < Table->capacity; i++) {
         Table->entries[i].action = NULL;
@@ -24,7 +25,7 @@ ActionTable* InitActionData(uint64_t capacity)
 
 ActionTable* GetActionStructure(aoiData* Data)
 {
-    return &Data->ActionData;
+    return Data->ActionData;
 }
 
 ActionTable* GetActionChain(ActionTable* Table)
@@ -43,7 +44,7 @@ Action* NewAction(void (action)(aoiData*), const char* name, const char* desc)
 
 void ResizeActionTable(ActionTable* Table)
 {
-    ActionTable* list = InitActionData(Table->capacity * 4);
+    ActionTable* list = InitActionData(Table->capacity * 4, Table->patternLen);
     if (!list) {
         fprintf(stderr, "ResizeActionTable:\n");
         fprintf(stderr, "malloc failed!\n");
@@ -53,8 +54,6 @@ void ResizeActionTable(ActionTable* Table)
     size_t index = 0;
     for (size_t i = 0; i < Table->capacity; i++) {
         if (Table->entries[index].pattern) {
-            printf("patern: %p\n", Table->entries[index].pattern);
-            printf("action: %p\n", Table->entries[index].action);
             list->entries[list->count].pattern = Table->entries[index].pattern;
             list->entries[list->count++].action = Table->entries[index].action;
         }
@@ -75,7 +74,7 @@ void ResizeActionTable(ActionTable* Table)
 
     uint64_t newCap = list->count * 1.5 * 1.5;
 
-    ActionTable* tmp = InitActionData(newCap);
+    ActionTable* tmp = InitActionData(newCap, Table->patternLen);
     if (!tmp) {
         fprintf(stderr, "ResizeActionTable:\n");
         fprintf(stderr, "malloc failed!\n");
@@ -83,8 +82,10 @@ void ResizeActionTable(ActionTable* Table)
     }
 
     index = 0;
-    for (size_t i = 0; i < newCap; i++) {
-        AddActionFromEntry(tmp, &list->entries[i]);
+    for (size_t i = 0; i < list->capacity; i++) {
+        if (list->entries[i].pattern) {
+            AddActionFromEntry(tmp, &list->entries[i]);
+        }
     }
     free(list->entries);
     free(list);
@@ -106,8 +107,9 @@ bool DoesKeyMatchPattern(const uint16_t* key, const uint16_t* pattern, uint64_t 
 {
     if (!pattern) return false;
     size_t index = 0;
+
     while (index < len) {
-        if (pattern[index] != UINT16_MAX) {
+        if (pattern[index] != PATTERN_IGNORE) {
             if (key[index] != pattern[index]) return false;
         }
         index++;
@@ -118,28 +120,28 @@ bool DoesKeyMatchPattern(const uint16_t* key, const uint16_t* pattern, uint64_t 
 ActionEntry* GetActionEntryFromPattern(ActionTable* Table, const uint16_t* pattern)
 {
     for (size_t i = 0; i < Table->capacity; i++) {
-        if (DoesKeyMatchPattern(pattern, Table->entries[i].pattern, Table->capacity)) return &Table->entries[i];
+        if (DoesKeyMatchPattern(pattern, Table->entries[i].pattern, Table->patternLen)) return &Table->entries[i];
     }
     return NULL;
 }
 
 ActionEntry* GetActionEntryFromCurrentBindings(aoiData* Data)
 {
-    for (size_t i = 0; i < Data->ActionData.capacity; i++) {
-        if (DoesKeyMatchPattern(*Data->ActiveBindings, Data->ActionData.entries[i].pattern, Data->ActionData.capacity)) return &Data->ActionData.entries[i];
+    for (size_t i = 0; i < Data->ActionData->capacity; i++) {
+        if (DoesKeyMatchPattern(*Data->ActiveBindings, Data->ActionData->entries[i].pattern, Data->ActionData->patternLen)) return &Data->ActionData->entries[i];
     }
     return NULL;
 }
 
 void AddActionFromPattern(ActionTable* Table, Action* action, const uint16_t* pattern)
 {
-    uint64_t hash = Hash(action->name);
+    uint64_t hash = HashPattern(pattern, Table->patternLen);
     uint64_t i = hash % Table->capacity;
     if (Table->entries[i].pattern) {
         if (Table->chain) {
             AddActionFromPattern(Table->chain, action, pattern);
         } else {
-            Table->chain = InitActionData(DEFAULT_CAPACITY);
+            Table->chain = InitActionData(DEFAULT_CAPACITY, Table->patternLen);
             AddActionFromPattern(Table->chain, action, pattern);
         }
     } else {
@@ -157,8 +159,8 @@ void AddActionFromEntry(ActionTable* Table, ActionEntry* entry)
 
 void AddActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding)
 {
-    uint16_t* pattern = ConvertBindingsToFuzzyPattern(&Data->BindingData, binding);
-    AddActionFromPattern(&Data->ActionData, action, pattern);
+    uint16_t* pattern = ConvertBindingsToFuzzyPattern(Data->BindingData, binding);
+    AddActionFromPattern(Data->ActionData, action, pattern);
 }
 
 //
@@ -175,8 +177,8 @@ void SetActionFromKeyAction(ActionTable* Table, Action* action, const uint16_t* 
 
 void SetActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding)
 {
-    uint16_t* pattern = ConvertBindingsToFuzzyPattern(&Data->BindingData, binding);
-    SetActionFromKeyAction(&Data->ActionData, action, pattern);
+    uint16_t* pattern = ConvertBindingsToFuzzyPattern(Data->BindingData, binding);
+    SetActionFromKeyAction(Data->ActionData, action, pattern);
 }
 
 void ActionHandler(aoiData* Data)
@@ -185,7 +187,6 @@ void ActionHandler(aoiData* Data)
     if (entry) {
         if (entry->action) {
             entry->action->action(Data);
-            printf("Action: %s\n", entry->action->name);
         } 
     } 
 }
@@ -194,7 +195,7 @@ ActionEntry* GetActionEntry(ActionTable* Table, char* name)
 {
     static size_t err_count = 1;
     
-    uint64_t hash = Hash(name);
+    uint64_t hash = HashStr(name);
     uint64_t index = hash % Table->capacity;
 
     if (index > Table->capacity) {

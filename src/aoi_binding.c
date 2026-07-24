@@ -23,7 +23,7 @@ BindingTable* InitBindingData(uint64_t capacity)
 
 BindingTable* GetBindingStructure(aoiData* Data)
 {
-    return &Data->BindingData;
+    return Data->BindingData;
 }
 
 BindingTable* GetBindingChain(BindingTable* Table)
@@ -31,7 +31,7 @@ BindingTable* GetBindingChain(BindingTable* Table)
     return Table->chain;
 }
 
-void ResizeBindingTable(BindingTable* Table)
+void ResizeBindingTable(aoiData* Data, BindingTable* Table)
 {
     BindingTable* list = InitBindingData(Table->capacity * 4);
     if (!list) {
@@ -88,25 +88,27 @@ void ResizeBindingTable(BindingTable* Table)
 
     mempcpy(Table->entries, tmp, sizeof(BindingEntry) * Table->capacity);
     free(tmp);
+
+    Data->ActionData->patternLen = Table->capacity;
 }
 
-void AddBinding(BindingTable* Table, const char* name)
+void AddBinding(aoiData* Data, BindingTable* Table, const char* name)
 {
-    uint64_t hash = Hash(name);
+    uint64_t hash = HashStr(name);
     uint64_t i = hash % Table->capacity;
     if (Table->entries[i].name) {
         if (Table->chain) {
-            AddBinding(Table->chain, name);
+            AddBinding(Data, Table->chain, name);
         } else {
             Table->chain = InitBindingData(DEFAULT_CAPACITY);
-            AddBinding(Table->chain, name);
+            AddBinding(Data, Table->chain, name);
         }
     } else {
         Table->entries[i].name = name;
         Table->entries[i].patternElement = 0;
         Table->count++;
     }
-    if (Table->count >= (Table->capacity * 0.75)) ResizeBindingTable(Table);
+    if (Table->count >= (Table->capacity * 0.75)) ResizeBindingTable(Data, Table);
     // Consider resizing ActiveBindings here if still used
     // Data->ActiveBindings = realloc(Data->ActiveBindings, sizeof(uint16_t*) * Data->BindingData.capacity);
 }
@@ -115,7 +117,7 @@ BindingEntry* GetBindingEntry(BindingTable* Table, char* name)
 {
     static size_t err_count = 1;
     
-    uint64_t hash = Hash(name);
+    uint64_t hash = HashStr(name);
     uint64_t index = hash % Table->capacity;
 
     if (index > Table->capacity) {
@@ -137,7 +139,7 @@ uint16_t* ConvertBindingsToPattern(BindingTable* Table, BindingEntry binding[])
     for (size_t i = 0; i < Table->capacity; i++) {
         if (!binding[i].name) break;
 
-        uint64_t hash = Hash(binding[i].name);
+        uint64_t hash = HashStr(binding[i].name);
         uint64_t index = hash % Table->capacity;
 
         pattern[index] = binding[i].patternElement;
@@ -147,13 +149,21 @@ uint16_t* ConvertBindingsToPattern(BindingTable* Table, BindingEntry binding[])
 
 uint16_t* ConvertBindingsToFuzzyPattern(BindingTable* Table, BindingEntry binding[])
 {
-    uint16_t* pattern = calloc(Table->capacity, sizeof(uint16_t));
-    memset(pattern, PATTERN_IGNORE, Table->capacity);
+    uint16_t* pattern = malloc(sizeof(uint16_t) * Table->capacity);
+    if (!pattern) {
+        fprintf(stderr, "ConvertBindingsToFuzzyPattern\n");
+        fprintf(stderr, "malloc failed!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    for (size_t i = 0; i < Table->capacity; i++) {
+        pattern[i] = PATTERN_IGNORE;
+    }
 
     for (size_t i = 0; i < Table->capacity; i++) {
         if (!binding[i].name) break;
 
-        uint64_t hash = Hash(binding[i].name);
+        uint64_t hash = HashStr(binding[i].name);
         uint64_t index = hash % Table->capacity;
 
         pattern[index] = binding[i].patternElement;
@@ -164,6 +174,13 @@ uint16_t* ConvertBindingsToFuzzyPattern(BindingTable* Table, BindingEntry bindin
 void SetBindings_(BindingTable* Table, BindingEntry binding[])
 {
     uint16_t* pattern = ConvertBindingsToFuzzyPattern(Table, binding);
+    printf("SetBindings_\n");
+    printf("pattern:\n");
+    printf("\t");
+    for (size_t i = 0; i < Table->capacity; i++) {
+        printf("%u ", pattern[i]);
+    }
+    printf("\n");
     for (size_t i = 0; i < Table->capacity; i++) {
         if (pattern[i] == PATTERN_IGNORE) continue;
         Table->entries[i].patternElement = pattern[i];
@@ -172,14 +189,14 @@ void SetBindings_(BindingTable* Table, BindingEntry binding[])
 
 void SetActiveBindings(aoiData *Data)
 {
-    for (size_t i = 0; i < Data->BindingData.capacity; i++) {
-        Data->ActiveBindings[i] = &Data->BindingData.entries[i].patternElement;
+    for (size_t i = 0; i < Data->BindingData->capacity; i++) {
+        Data->ActiveBindings[i] = &Data->BindingData->entries[i].patternElement;
     }
 }
 
 void ResetBindings(aoiData* Data)
 {
-    for (uint64_t i = 0; i < Data->BindingData.capacity; i++) {
+    for (uint64_t i = 0; i < Data->BindingData->capacity; i++) {
         if (!Data->ActiveBindings[i]) continue;
         *Data->ActiveBindings[i] = 0;
     }
