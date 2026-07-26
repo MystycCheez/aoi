@@ -145,3 +145,35 @@ UserDataEntry* GetUserDataEntry(UserDataTable* Table, char* name)
     }
     return entry;
 }
+
+void FreeUserData(UserDataTable* UD)
+{
+    for (size_t i = 0; i < UD->capacity; i++) {
+        if (UD->entries[i].ptr) {
+            free(UD->entries[i].ptr);
+        }
+    }
+}
+
+void UserDataCleanup(aoiData* Data)
+{
+    UserDataTable* Chain = Data->UserData;
+    UserDataTable** Chains = malloc(sizeof(UserDataTable*));
+
+    size_t count = 0;
+
+    // Surely there is a better way to do this???
+    while ((Chain = GetUserDataChain(Chain))) {
+        FreeUserData(Chain);
+        Chains[count++] = Chain;
+        Chains = realloc(Chains, sizeof(UserDataTable*) + count);
+    }
+    while (count >= 0) {
+        free(Chains[count]->entries);
+        free(Chains[count--]);
+    }
+
+    free(Chains);
+    free(Data->UserData->entries);
+    free(Data->UserData);
+}

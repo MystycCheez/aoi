@@ -203,3 +203,25 @@ void ResetBindings(aoiData* Data)
         *Data->ActiveBindings[i] = 0;
     }
 }
+
+void BindingCleanup(aoiData* Data)
+{
+    BindingTable* Chain = Data->BindingData;
+    BindingTable** Chains = malloc(sizeof(BindingTable*));
+
+    size_t count = 0;
+
+    // Surely there is a better way to do this???
+    while ((Chain = GetBindingChain(Chain))) {
+        Chains[count++] = Chain;
+        Chains = realloc(Chains, sizeof(BindingTable*) + count);
+    }
+    while (count >= 0) {
+        free(Chains[count]->entries);
+        free(Chains[count--]);
+    }
+
+    free(Chains);
+    free(Data->BindingData->entries);
+    free(Data->BindingData);
+}

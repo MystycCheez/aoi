@@ -225,3 +225,35 @@ ActionEntry* GetActionEntry(ActionTable* Table, char* name)
     }
     return entry;
 }
+
+void FreeActionData(ActionTable* ActionData)
+{
+    for (size_t i = 0; i < ActionData->capacity; i++) {
+        if (ActionData->entries[i].action) {
+            free(ActionData->entries[i].action);
+        }
+    }
+}
+
+void ActionCleanup(aoiData* Data)
+{
+    ActionTable* Chain = Data->ActionData;
+    ActionTable** Chains = malloc(sizeof(ActionTable*));
+
+    size_t count = 0;
+
+    // Surely there is a better way to do this???
+    while ((Chain = GetActionChain(Chain))) {
+        FreeActionData(Chain);
+        Chains[count++] = Chain;
+        Chains = realloc(Chains, sizeof(ActionTable*) + count);
+    }
+    while (count >= 0) {
+        free(Chains[count]->entries);
+        free(Chains[count--]);
+    }
+
+    free(Chains);
+    free(Data->ActionData->entries);
+    free(Data->ActionData);
+}

@@ -38,12 +38,9 @@ aoiData* aoiInit(
 
 void aoiCleanup(aoiData* Data)
 {
+    // ActionCleanup(Data);
+    // BindingCleanup(Data);
     // UserDataCleanup(Data);
-    // ActionDataCleanup(Data);
-
-    free(Data->UserData->entries);
-    free(Data->ActionData->entries);
-    free(Data->UserData->entries);
     free(Data);
 }
 

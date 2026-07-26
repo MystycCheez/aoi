@@ -86,6 +86,8 @@ void SetBindings_(BindingTable* Table, BindingEntry binding[]);
 void SetActiveBindings(aoiData *Data);
 void ResetBindings(aoiData* Data);
 
+void BindingCleanup(aoiData* Data);
+
 // aoi_action.c
 ActionTable* InitActionData(uint64_t capacity, uint64_t pattenLen);
 ActionTable* GetActionStructure(aoiData* Data);
@@ -103,6 +105,9 @@ void SetActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding);
 void ActionHandler(aoiData* Data);
 ActionEntry* GetActionEntry(ActionTable* Table, char* name);
 
+void FreeActionData(ActionTable* ActionData);
+void ActionCleanup(aoiData* Data);
+
 // aoi_userdata.c
 UserDataTable* InitUserData(uint64_t capacity);
 UserDataTable* GetUserDataStructure(aoiData* Data);
@@ -112,6 +117,9 @@ void ResizeUserDataTable(UserDataTable* Table);
 void AddUserData_(UserDataTable* Table, const char* name, void* ptr);
 void AddUserDataWithStruct(UserDataTable* Table, UserDataEntry* entry);
 UserDataEntry* GetUserDataEntry(UserDataTable* Table, char* name);
+
+void FreeUserData(UserDataTable* UD);
+void UserDataCleanup(aoiData* Data);
 
 //
 aoiData* aoiInit(
