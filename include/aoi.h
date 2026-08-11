@@ -79,7 +79,7 @@ BindingTable* GetBindingStructure(aoiData* Data);
 BindingTable* GetBindingChain(BindingTable* Table);
 void ResizeBindingTable(aoiData* Data, BindingTable* Table);
 void AddBinding(aoiData* Data, BindingTable* Table, const char* name);
-BindingEntry* GetBindingEntry(BindingTable* Table, char* name);
+BindingEntry* GetBindingEntry(aoiData* Data, char* name);
 uint16_t* ConvertBindingsToPattern(BindingTable* Table, BindingEntry binding[]);
 uint16_t* ConvertBindingsToFuzzyPattern(BindingTable* Table, BindingEntry binding[]);
 void SetBindings_(BindingTable* Table, BindingEntry binding[]);
@@ -103,7 +103,7 @@ void AddActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding);
 void SetActionFromKeyAction(ActionTable* Table, Action* action, const uint16_t* pattern);
 void SetActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding);
 void ActionHandler(aoiData* Data);
-ActionEntry* GetActionEntry(ActionTable* Table, char* name);
+ActionEntry* GetActionEntry(aoiData* Data, char* name);
 
 void FreeActionData(ActionTable* ActionData);
 void ActionCleanup(aoiData* Data);
@@ -116,7 +116,7 @@ void AddUserData(aoiData* Data, char* name, void* data);
 void ResizeUserDataTable(UserDataTable* Table);
 void AddUserData_(UserDataTable* Table, const char* name, void* ptr);
 void AddUserDataWithStruct(UserDataTable* Table, UserDataEntry* entry);
-UserDataEntry* GetUserDataEntry(UserDataTable* Table, char* name);
+UserDataEntry* GetUserDataEntry(aoiData* Data, char* name);
 
 void FreeUserData(UserDataTable* UD);
 void UserDataCleanup(aoiData* Data);
@@ -131,13 +131,13 @@ void aoiCleanup(aoiData* Data);
 uint64_t HashStr(const char* name);
 uint64_t HashPattern(const uint16_t* pattern, uint64_t len);
 
-#define AddAction(Table, Action, ...) \
-    AddActionFromBinding(Table, Action, (BindingEntry[]){__VA_ARGS__, {NULL, 0}})
+#define AddAction(aoiData, Action, ...) \
+    AddActionFromBinding(aoiData, Action, (BindingEntry[]){__VA_ARGS__, {NULL, 0}})
 
 #define SetAction(aoiData, Action, ...) \
     SetActionFromBinding(aoiData, Action, (BindingEntry[]){__VA_ARGS__, {NULL, 0}})
 
-#define SetBindings(Table, ...) \
-    SetBindings_(Table, (BindingEntry[]){__VA_ARGS__, {NULL, 0}})
+#define SetBindings(aoiData, ...) \
+    SetBindings_(aoiData, (BindingEntry[]){__VA_ARGS__, {NULL, 0}})
 
 #endif

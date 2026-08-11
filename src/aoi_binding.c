@@ -113,19 +113,19 @@ void AddBinding(aoiData* Data, BindingTable* Table, const char* name)
     // Data->ActiveBindings = realloc(Data->ActiveBindings, sizeof(uint16_t*) * Data->BindingData.capacity);
 }
 
-BindingEntry* GetBindingEntry(BindingTable* Table, char* name)
+BindingEntry* GetBindingEntry(aoiData* Data, char* name)
 {
     static size_t err_count = 1;
     
     uint64_t hash = HashStr(name);
-    uint64_t index = hash % Table->capacity;
+    uint64_t index = hash % Data->BindingData->capacity;
 
-    if (index > Table->capacity) {
+    if (index > Data->BindingData->capacity) {
         fprintf(stderr, "err count: %zu - ", err_count++);
         fprintf(stderr, "index out of bounds!\n\n");
         return NULL;
     }
-    BindingEntry* entry = &Table->entries[index];
+    BindingEntry* entry = &Data->BindingData->entries[index];
     if (!entry) {
         fprintf(stderr, "Binding Entry not found.\n");
     }

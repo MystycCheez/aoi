@@ -114,7 +114,7 @@ bool DoesKeyMatchPattern(const uint16_t* key, const uint16_t* pattern, uint64_t 
 
     while (index < len) {
         if (pattern[index] != PATTERN_IGNORE) {
-            printf("%u, %u\n", pattern[index], key[index]);
+            // printf("%u, %u\n", pattern[index], key[index]);
             if (pattern[index] != key[index]) return false;
         }
         index++;
@@ -143,7 +143,7 @@ ActionEntry* GetActionEntryFromCurrentBindings(aoiData* Data)
             free(tmp);
         }
     }
-    printf("Nope\n");
+    // printf("Nope\n");
     free(tmp);
     return NULL;
 }
@@ -206,20 +206,20 @@ void ActionHandler(aoiData* Data)
     } 
 }
 
-ActionEntry* GetActionEntry(ActionTable* Table, char* name)
+ActionEntry* GetActionEntry(aoiData* Data, char* name)
 {
     static size_t err_count = 1;
     
     uint64_t hash = HashStr(name);
-    uint64_t index = hash % Table->capacity;
+    uint64_t index = hash % Data->ActionData->capacity;
 
-    if (index > Table->capacity) {
+    if (index > Data->ActionData->capacity) {
         fprintf(stderr, "err count: %zu - ", err_count++);
         fprintf(stderr, "index out of bounds!\n\n");
         return NULL;
     }
     
-    ActionEntry* entry = &Table->entries[index];
+    ActionEntry* entry = &Data->ActionData->entries[index];
     if (!entry) {
         fprintf(stderr, "Action Entry not found.\n");
     }
@@ -231,6 +231,7 @@ void FreeActionData(ActionTable* ActionData)
     for (size_t i = 0; i < ActionData->capacity; i++) {
         if (ActionData->entries[i].action) {
             free(ActionData->entries[i].action);
+            ActionData->entries[i].action = NULL;
         }
     }
 }
@@ -239,16 +240,29 @@ void ActionCleanup(aoiData* Data)
 {
     ActionTable* Chain = Data->ActionData;
     ActionTable** Chains = malloc(sizeof(ActionTable*));
+    Chains[0] = Chain;
+    FreeActionData(Chain);
 
     size_t count = 0;
 
     // Surely there is a better way to do this???
-    while ((Chain = GetActionChain(Chain))) {
-        FreeActionData(Chain);
-        Chains[count++] = Chain;
-        Chains = realloc(Chains, sizeof(ActionTable*) + count);
+    // while ((Chain = GetActionChain(Chain))) {
+    //     FreeActionData(Chain);
+    //     Chains[count++] = Chain;
+    //     Chains = realloc(Chains, sizeof(ActionTable*) + count);
+    //     Chains[count] = NULL;
+    // }
+
+    size_t i = 0;
+    while (true) {
+        printf("Index: %zu\n", i);
+        printf("%u\n\n", *((uint8_t*)(Chains) + i++));
     }
+
+    printf("Count: %zu\n", count);
     while (count >= 0) {
+        printf("%p\n", Chains[count]);
+        printf("%p\n", Chains[count]->entries);
         free(Chains[count]->entries);
         free(Chains[count--]);
     }

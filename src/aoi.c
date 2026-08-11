@@ -38,9 +38,9 @@ aoiData* aoiInit(
 
 void aoiCleanup(aoiData* Data)
 {
-    // ActionCleanup(Data);
-    // BindingCleanup(Data);
-    // UserDataCleanup(Data);
+    ActionCleanup(Data);
+    BindingCleanup(Data);
+    UserDataCleanup(Data);
     free(Data);
 }
 

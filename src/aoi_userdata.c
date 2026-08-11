@@ -126,20 +126,20 @@ void AddUserDataWithStruct(UserDataTable* Table, UserDataEntry* entry)
     AddUserData_(Table, entry->name, entry->ptr);
 }
 
-UserDataEntry* GetUserDataEntry(UserDataTable* Table, char* name)
+UserDataEntry* GetUserDataEntry(aoiData* Data, char* name)
 {
     static size_t err_count = 1;
     
     uint64_t hash = HashStr(name);
-    uint64_t index = hash % Table->capacity;
+    uint64_t index = hash % Data->UserData->capacity;
 
-    if (index > Table->capacity) {
+    if (index > Data->UserData->capacity) {
         fprintf(stderr, "err count: %zu - ", err_count++);
         fprintf(stderr, "index out of bounds!\n\n");
         return NULL;
     }
     
-    UserDataEntry* entry = &Table->entries[index];
+    UserDataEntry* entry = &Data->UserData->entries[index];
     if (!entry) {
         fprintf(stderr, "UserData Entry not found.\n");
     }
@@ -151,6 +151,7 @@ void FreeUserData(UserDataTable* UD)
     for (size_t i = 0; i < UD->capacity; i++) {
         if (UD->entries[i].ptr) {
             free(UD->entries[i].ptr);
+            UD->entries[i].ptr = NULL;
         }
     }
 }
