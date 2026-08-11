@@ -171,9 +171,9 @@ uint16_t* ConvertBindingsToFuzzyPattern(BindingTable* Table, BindingEntry bindin
     return pattern;
 }
 
-void SetBindings_(BindingTable* Table, BindingEntry binding[])
+void SetBindings_(aoiData* Data, BindingEntry binding[])
 {
-    uint16_t* pattern = ConvertBindingsToFuzzyPattern(Table, binding);
+    uint16_t* pattern = ConvertBindingsToFuzzyPattern(Data->BindingData, binding);
     // printf("SetBindings_\n");
     // printf("pattern:\n");
     // printf("\t");
@@ -181,9 +181,9 @@ void SetBindings_(BindingTable* Table, BindingEntry binding[])
     //     printf("%u ", pattern[i]);
     // }
     // printf("\n");
-    for (size_t i = 0; i < Table->capacity; i++) {
+    for (size_t i = 0; i < Data->BindingData->capacity; i++) {
         if (pattern[i] == PATTERN_IGNORE) continue;
-        Table->entries[i].patternElement = pattern[i];
+        Data->BindingData->entries[i].patternElement = pattern[i];
     }
 }
 

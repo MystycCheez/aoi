@@ -82,7 +82,7 @@ void AddBinding(aoiData* Data, BindingTable* Table, const char* name);
 BindingEntry* GetBindingEntry(aoiData* Data, char* name);
 uint16_t* ConvertBindingsToPattern(BindingTable* Table, BindingEntry binding[]);
 uint16_t* ConvertBindingsToFuzzyPattern(BindingTable* Table, BindingEntry binding[]);
-void SetBindings_(BindingTable* Table, BindingEntry binding[]);
+void SetBindings_(aoiData* Data, BindingEntry binding[]);
 void SetActiveBindings(aoiData *Data);
 void ResetBindings(aoiData* Data);
 
