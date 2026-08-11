@@ -117,6 +117,7 @@ void ResizeUserDataTable(UserDataTable* Table);
 void AddUserData_(UserDataTable* Table, const char* name, void* ptr);
 void AddUserDataWithStruct(UserDataTable* Table, UserDataEntry* entry);
 UserDataEntry* GetUserDataEntry(aoiData* Data, char* name);
+void* GetUserData(aoiData* Data, char* name);
 
 void FreeUserData(UserDataTable* UD);
 void UserDataCleanup(aoiData* Data);

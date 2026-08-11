@@ -146,6 +146,11 @@ UserDataEntry* GetUserDataEntry(aoiData* Data, char* name)
     return entry;
 }
 
+void* GetUserData(aoiData* Data, char* name)
+{
+    return GetUserDataEntry(Data, name)->ptr;
+}
+
 void FreeUserData(UserDataTable* UD)
 {
     for (size_t i = 0; i < UD->capacity; i++) {
