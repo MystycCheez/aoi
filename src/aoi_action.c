@@ -253,11 +253,12 @@ void ActionCleanup(aoiData* Data)
     //     Chains[count] = NULL;
     // }
 
-    size_t i = 0;
-    while (true) {
-        printf("Index: %zu\n", i);
-        printf("%u\n\n", *((uint8_t*)(Chains) + i++));
-    }
+    // what was i trying to do here?
+    // size_t i = 0;
+    // while (true) {
+    //     printf("Index: %zu\n", i);
+    //     printf("%u\n\n", *((uint8_t*)(Chains) + i++));
+    // }
 
     printf("Count: %zu\n", count);
     while (count >= 0) {

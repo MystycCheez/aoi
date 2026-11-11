@@ -132,6 +132,11 @@ BindingEntry* GetBindingEntry(aoiData* Data, char* name)
     return entry;
 }
 
+uint16_t GetBinding(aoiData* Data, char* name)
+{
+    return GetBindingEntry(Data, name)->patternElement;
+}
+
 uint16_t* ConvertBindingsToPattern(BindingTable* Table, BindingEntry binding[])
 {
     uint16_t* pattern = calloc(Table->capacity, sizeof(uint16_t));
