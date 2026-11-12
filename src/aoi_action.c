@@ -139,8 +139,8 @@ ActionEntry* GetActionEntryFromCurrentBindings(aoiData* Data)
 
     for (size_t i = 0; i < Data->ActionData->capacity; i++) {
         if (DoesKeyMatchPattern(tmp, Data->ActionData->entries[i].pattern, Data->ActionData->patternLen)) {
-            return &Data->ActionData->entries[i];
             free(tmp);
+            return &Data->ActionData->entries[i];
         }
     }
     // printf("Nope\n");
@@ -265,7 +265,13 @@ void ActionCleanup(aoiData* Data)
 
         free(Chains);
     }
+
+    for (size_t i = 0; i < Start->capacity; i++) {
+        free(Start->entries[i].action);
+        free((void*)Start->entries[i].pattern);
+    }
     
-    free(Data->ActionData->entries);
-    free(Data->ActionData);
+    free(Start->entries);
+    free(Start);
+
 }

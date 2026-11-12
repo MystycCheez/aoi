@@ -190,6 +190,8 @@ void SetBindings_(aoiData* Data, BindingEntry binding[])
         if (pattern[i] == PATTERN_IGNORE) continue;
         Data->BindingData->entries[i].patternElement = pattern[i];
     }
+    
+    free(pattern);
 }
 
 void SetActiveBindings(aoiData *Data)

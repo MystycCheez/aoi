@@ -213,7 +213,15 @@ void UserDataCleanup(aoiData* Data)
 
         free(Chains);
     }
+
+    for (size_t i = 0; i < Start->capacity; i++) {
+        
+        // Should This be freed by the library or the user?
+        // free(Start->entries[i].ptr);
+
+        free((void*)Start->entries[i].name);
+    }
     
-    free(Data->UserData->entries);
-    free(Data->UserData);
+    free(Start->entries);
+    free(Start);
 }
