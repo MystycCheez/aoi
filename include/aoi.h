@@ -29,6 +29,7 @@ typedef struct BindingEntry {
 typedef struct BindingTable {
     BindingEntry* entries;
     struct BindingTable* chain;
+    uint64_t depth;
     uint64_t count;
     uint64_t capacity;
 } BindingTable;
@@ -41,6 +42,7 @@ typedef struct ActionEntry {
 typedef struct ActionTable {
     ActionEntry* entries;
     struct ActionTable* chain;
+    uint64_t depth;
     uint64_t count;
     uint64_t capacity;
     uint64_t patternLen;
@@ -54,6 +56,7 @@ typedef struct UserDataEntry {
 typedef struct UserDataTable {
     UserDataEntry* entries;
     struct UserDataTable* chain;
+    uint64_t depth;
     uint64_t count;
     uint64_t capacity;
 } UserDataTable;
@@ -74,7 +77,7 @@ typedef struct aoiData {
 void A_DoNothing(aoiData* Data);
 
 // aoi_binding.c
-BindingTable* InitBindingData(uint64_t capacity);
+BindingTable* InitBindingData(uint64_t capacity, uint64_t depth);
 BindingTable* GetBindingStructure(aoiData* Data);
 BindingTable* GetBindingChain(BindingTable* Table);
 void ResizeBindingTable(aoiData* Data, BindingTable* Table);
@@ -90,7 +93,7 @@ void ResetBindings(aoiData* Data);
 void BindingCleanup(aoiData* Data);
 
 // aoi_action.c
-ActionTable* InitActionData(uint64_t capacity, uint64_t pattenLen);
+ActionTable* InitActionData(uint64_t capacity, uint64_t pattenLen, uint64_t depth);
 ActionTable* GetActionStructure(aoiData* Data);
 ActionTable* GetActionChain(ActionTable* Table);
 Action* NewAction(void (action)(aoiData*), const char* name, const char* desc);
@@ -110,7 +113,7 @@ void FreeActionData(ActionTable* ActionData);
 void ActionCleanup(aoiData* Data);
 
 // aoi_userdata.c
-UserDataTable* InitUserData(uint64_t capacity);
+UserDataTable* InitUserData(uint64_t capacity, uint64_t depth);
 UserDataTable* GetUserDataStructure(aoiData* Data);
 UserDataTable* GetUserDataChain(UserDataTable* Table);
 void AddUserData(aoiData* Data, char* name, void* data);

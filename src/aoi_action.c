@@ -5,13 +5,14 @@
 #include <string.h>
 #include <stdbool.h>
 
-ActionTable* InitActionData(uint64_t capacity, uint64_t pattenLen)
+ActionTable* InitActionData(uint64_t capacity, uint64_t pattenLen, uint64_t depth)
 {
     ActionTable* Table = malloc(sizeof(ActionTable));
 
     Table->capacity = capacity;
     Table->count = 0;
     Table->chain = NULL;
+    Table->depth = depth;
     Table->entries = malloc(sizeof(ActionEntry) * Table->capacity);
     Table->patternLen = pattenLen;
 
@@ -44,7 +45,7 @@ Action* NewAction(void (action)(aoiData*), const char* name, const char* desc)
 
 void ResizeActionTable(ActionTable* Table)
 {
-    ActionTable* list = InitActionData(Table->capacity * 4, Table->patternLen);
+    ActionTable* list = InitActionData(Table->capacity * 4, Table->patternLen, 0);
     if (!list) {
         fprintf(stderr, "ResizeActionTable:\n");
         fprintf(stderr, "malloc failed!\n");
@@ -74,7 +75,7 @@ void ResizeActionTable(ActionTable* Table)
 
     uint64_t newCap = list->count * 1.5 * 1.5;
 
-    ActionTable* tmp = InitActionData(newCap, Table->patternLen);
+    ActionTable* tmp = InitActionData(newCap, Table->patternLen, 0);
     if (!tmp) {
         fprintf(stderr, "ResizeActionTable:\n");
         fprintf(stderr, "malloc failed!\n");
@@ -156,7 +157,7 @@ void AddActionFromPattern(ActionTable* Table, Action* action, const uint16_t* pa
         if (Table->chain) {
             AddActionFromPattern(Table->chain, action, pattern);
         } else {
-            Table->chain = InitActionData(DEFAULT_CAPACITY, Table->patternLen);
+            Table->chain = InitActionData(DEFAULT_CAPACITY, Table->patternLen, Table->depth + 1);
             AddActionFromPattern(Table->chain, action, pattern);
         }
     } else {
@@ -238,7 +239,7 @@ void FreeActionData(ActionTable* ActionData)
 
 void ActionCleanup(aoiData* Data)
 {
-    ActionTable* Chain = Data->ActionData;
+    ActionTable* Chain = GetActionStructure(Data);
     ActionTable** Chains = malloc(sizeof(ActionTable*));
     Chains[0] = Chain;
     FreeActionData(Chain);

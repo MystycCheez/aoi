@@ -4,13 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-UserDataTable* InitUserData(uint64_t capacity)
+UserDataTable* InitUserData(uint64_t capacity, uint64_t depth)
 {
     UserDataTable* Table = malloc(sizeof(UserDataTable));
 
     Table->capacity = capacity;
     Table->count = 0;
     Table->chain = NULL;
+    Table->depth = depth;
     Table->entries = malloc(sizeof(UserDataEntry) * Table->capacity);
 
     for (uint64_t i = 0; i < Table->capacity; i++) {
@@ -45,7 +46,7 @@ void AddUserData(aoiData* Data, char* name, void* data)
 
 void ResizeUserDataTable(UserDataTable* Table)
 {
-    UserDataTable* list = InitUserData(Table->capacity * 4);
+    UserDataTable* list = InitUserData(Table->capacity * 4, 0);
     if (!list) {
         fprintf(stderr, "ResizeUserDataTable:\n");
         fprintf(stderr, "malloc failed!\n");
@@ -110,7 +111,7 @@ void AddUserData_(UserDataTable* Table, const char* name, void* ptr)
         if (Table->chain) {
             AddUserData_(Table->chain, name, ptr);
         } else {
-            Table->chain = InitUserData(DEFAULT_CAPACITY);
+            Table->chain = InitUserData(DEFAULT_CAPACITY, Table->depth + 1);
             AddUserData_(Table->chain, name, ptr);
         }
     } else {

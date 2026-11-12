@@ -4,13 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-BindingTable* InitBindingData(uint64_t capacity)
+BindingTable* InitBindingData(uint64_t capacity, uint64_t depth)
 {
     BindingTable* Table = malloc(sizeof(BindingTable));
 
     Table->capacity = capacity;
     Table->count = 0;
     Table->chain = NULL;
+    Table->depth = depth;
     Table->entries = malloc(sizeof(BindingEntry) * Table->capacity);
 
     for (uint64_t i = 0; i < Table->capacity; i++) {
@@ -33,7 +34,7 @@ BindingTable* GetBindingChain(BindingTable* Table)
 
 void ResizeBindingTable(aoiData* Data, BindingTable* Table)
 {
-    BindingTable* list = InitBindingData(Table->capacity * 4);
+    BindingTable* list = InitBindingData(Table->capacity * 4, 0);
     if (!list) {
         fprintf(stderr, "ResizeBindingTable:\n");
         fprintf(stderr, "malloc failed!\n");
@@ -100,7 +101,7 @@ void AddBinding(aoiData* Data, BindingTable* Table, const char* name)
         if (Table->chain) {
             AddBinding(Data, Table->chain, name);
         } else {
-            Table->chain = InitBindingData(DEFAULT_CAPACITY);
+            Table->chain = InitBindingData(DEFAULT_CAPACITY, Table->depth);
             AddBinding(Data, Table->chain, name);
         }
     } else {
