@@ -134,7 +134,7 @@ ActionEntry* GetActionEntryFromCurrentBindings(aoiData* Data)
 {
     uint16_t* tmp = malloc(sizeof(uint16_t) * Data->BindingData->capacity);
     for (uint64_t i = 0; i < Data->BindingData->capacity; i++) {
-        tmp[i] = *Data->ActiveBindings[i];
+        if (Data->ActiveBindings[i] != NULL) tmp[i] = *Data->ActiveBindings[i]; else tmp[i] = 0;
     }
 
     for (size_t i = 0; i < Data->ActionData->capacity; i++) {

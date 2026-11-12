@@ -29,8 +29,7 @@ aoiData* aoiInit(
 
     Data->ActiveBindings = malloc(sizeof(uint16_t*) * BindingCapacity);
     for (size_t i = 0; i < BindingCapacity; i++) {
-        Data->ActiveBindings[i] = malloc(sizeof(uint16_t));
-        *Data->ActiveBindings[i] = 0;
+        Data->ActiveBindings[i] = NULL;
     }
 
     return Data;

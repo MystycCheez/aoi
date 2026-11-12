@@ -197,7 +197,7 @@ void SetActiveBindings(aoiData *Data)
     for (size_t i = 0; i < Data->BindingData->capacity; i++) {
         if (Data->BindingData->entries[i].name) {
             Data->ActiveBindings[i] = &Data->BindingData->entries[i].patternElement;
-        } else *Data->ActiveBindings[i] = 0;
+        }
     }
 }
 
@@ -209,20 +209,7 @@ void ResetBindings(aoiData* Data)
     }
 }
 
-void _BindingCleanup(aoiData *Data)
-{
-    BindingTable* Chain = Data->BindingData;
-
-    size_t count = 0;
-
-    while (Chain->chain != NULL) {
-        Chain = Chain->chain;
-        count++;
-    }
-    
-}
-
-void BindingCleanup(aoiData* Data)
+void _BindingCleanup(aoiData* Data)
 {
     BindingTable* Chain = Data->BindingData;
     BindingTable** Chains = malloc(sizeof(BindingTable*));
@@ -240,6 +227,42 @@ void BindingCleanup(aoiData* Data)
     }
 
     free(Chains);
+    free(Data->BindingData->entries);
+    free(Data->BindingData);
+}
+
+void BindingCleanup(aoiData* Data)
+{
+    BindingTable* Start = Data->BindingData;
+    BindingTable* Chain = GetBindingChain(Start);
+
+    if (Chain != NULL) {
+        size_t count = 0;
+        size_t index = 0;
+        
+        // Surely there is a better way to do this???
+        while ((Chain = GetBindingChain(Chain)) != NULL) count++;
+        Chain = GetBindingChain(Start);
+
+        BindingTable** Chains = malloc(sizeof(BindingTable*) * (count + 1));
+
+        bool looped = false;
+        while ((Chain = GetBindingChain(Chain))) {
+            Chains[index++] = Chain;
+            looped = true;
+        }
+        if (looped) index--;
+
+        while (index >= 0) {
+            free(Chains[index]->entries);
+            free(Chains[index--]);
+        }
+
+        free(Chains);
+    }
+    
+    free(Data->ActiveBindings);
+    
     free(Data->BindingData->entries);
     free(Data->BindingData);
 }
