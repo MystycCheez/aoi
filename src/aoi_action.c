@@ -5,14 +5,13 @@
 #include <string.h>
 #include <stdbool.h>
 
-ActionTable* InitActionData(uint64_t capacity, uint64_t pattenLen, uint64_t depth)
+ActionTable* InitActionData(uint64_t capacity, uint64_t pattenLen)
 {
     ActionTable* Table = malloc(sizeof(ActionTable));
 
     Table->capacity = capacity;
     Table->count = 0;
     Table->chain = NULL;
-    Table->depth = depth;
     Table->entries = malloc(sizeof(ActionEntry) * Table->capacity);
     Table->patternLen = pattenLen;
 
@@ -45,7 +44,7 @@ Action* NewAction(void (action)(aoiData*), const char* name, const char* desc)
 
 void ResizeActionTable(ActionTable* Table)
 {
-    ActionTable* list = InitActionData(Table->capacity * 4, Table->patternLen, 0);
+    ActionTable* list = InitActionData(Table->capacity * 4, Table->patternLen);
     if (!list) {
         fprintf(stderr, "ResizeActionTable:\n");
         fprintf(stderr, "malloc failed!\n");
@@ -75,7 +74,7 @@ void ResizeActionTable(ActionTable* Table)
 
     uint64_t newCap = list->count * 1.5 * 1.5;
 
-    ActionTable* tmp = InitActionData(newCap, Table->patternLen, 0);
+    ActionTable* tmp = InitActionData(newCap, Table->patternLen);
     if (!tmp) {
         fprintf(stderr, "ResizeActionTable:\n");
         fprintf(stderr, "malloc failed!\n");
@@ -157,7 +156,7 @@ void AddActionFromPattern(ActionTable* Table, Action* action, const uint16_t* pa
         if (Table->chain) {
             AddActionFromPattern(Table->chain, action, pattern);
         } else {
-            Table->chain = InitActionData(DEFAULT_CAPACITY, Table->patternLen, Table->depth + 1);
+            Table->chain = InitActionData(DEFAULT_CAPACITY, Table->patternLen);
             AddActionFromPattern(Table->chain, action, pattern);
         }
     } else {
@@ -239,37 +238,34 @@ void FreeActionData(ActionTable* ActionData)
 
 void ActionCleanup(aoiData* Data)
 {
-    ActionTable* Chain = GetActionStructure(Data);
-    ActionTable** Chains = malloc(sizeof(ActionTable*));
-    Chains[0] = Chain;
-    FreeActionData(Chain);
+    ActionTable* Start = Data->ActionData;
+    ActionTable* Chain = GetActionChain(Start);
 
-    size_t count = 0;
+    if (Chain != NULL) {
+        size_t count = 0;
+        size_t index = 0;
+        
+        // Surely there is a better way to do this???
+        while ((Chain = GetActionChain(Chain)) != NULL) count++;
+        Chain = GetActionChain(Start);
 
-    // Surely there is a better way to do this???
-    // while ((Chain = GetActionChain(Chain))) {
-    //     FreeActionData(Chain);
-    //     Chains[count++] = Chain;
-    //     Chains = realloc(Chains, sizeof(ActionTable*) + count);
-    //     Chains[count] = NULL;
-    // }
+        ActionTable** Chains = malloc(sizeof(ActionTable*) * (count + 1));
 
-    // what was i trying to do here?
-    // size_t i = 0;
-    // while (true) {
-    //     printf("Index: %zu\n", i);
-    //     printf("%u\n\n", *((uint8_t*)(Chains) + i++));
-    // }
+        bool looped = false;
+        while ((Chain = GetActionChain(Chain))) {
+            Chains[index++] = Chain;
+            looped = true;
+        }
+        if (looped) index--;
 
-    printf("Count: %zu\n", count);
-    while (count >= 0) {
-        printf("%p\n", Chains[count]);
-        printf("%p\n", Chains[count]->entries);
-        free(Chains[count]->entries);
-        free(Chains[count--]);
+        while (index >= 0) {
+            free(Chains[index]->entries);
+            free(Chains[index--]);
+        }
+
+        free(Chains);
     }
-
-    free(Chains);
+    
     free(Data->ActionData->entries);
     free(Data->ActionData);
 }

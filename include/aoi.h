@@ -77,7 +77,7 @@ typedef struct aoiData {
 void A_DoNothing(aoiData* Data);
 
 // aoi_binding.c
-BindingTable* InitBindingData(uint64_t capacity, uint64_t depth);
+BindingTable* InitBindingData(uint64_t capacity);
 BindingTable* GetBindingStructure(aoiData* Data);
 BindingTable* GetBindingChain(BindingTable* Table);
 void ResizeBindingTable(aoiData* Data, BindingTable* Table);
@@ -93,7 +93,7 @@ void ResetBindings(aoiData* Data);
 void BindingCleanup(aoiData* Data);
 
 // aoi_action.c
-ActionTable* InitActionData(uint64_t capacity, uint64_t pattenLen, uint64_t depth);
+ActionTable* InitActionData(uint64_t capacity, uint64_t pattenLen);
 ActionTable* GetActionStructure(aoiData* Data);
 ActionTable* GetActionChain(ActionTable* Table);
 Action* NewAction(void (action)(aoiData*), const char* name, const char* desc);
@@ -113,7 +113,7 @@ void FreeActionData(ActionTable* ActionData);
 void ActionCleanup(aoiData* Data);
 
 // aoi_userdata.c
-UserDataTable* InitUserData(uint64_t capacity, uint64_t depth);
+UserDataTable* InitUserData(uint64_t capacity);
 UserDataTable* GetUserDataStructure(aoiData* Data);
 UserDataTable* GetUserDataChain(UserDataTable* Table);
 void AddUserData(aoiData* Data, char* name, void* data);

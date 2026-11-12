@@ -23,9 +23,9 @@ aoiData* aoiInit(
     aoiData* Data = malloc(sizeof(aoiData));
     if (!Data) return NULL;
     
-    Data->BindingData = InitBindingData(BindingCapacity, 0);
-    Data->UserData = InitUserData(UserDataCapacity, 0);
-    Data->ActionData = InitActionData(ActionDataCapacity, BindingCapacity, 0);
+    Data->BindingData = InitBindingData(BindingCapacity);
+    Data->UserData = InitUserData(UserDataCapacity);
+    Data->ActionData = InitActionData(ActionDataCapacity, BindingCapacity);
 
     Data->ActiveBindings = malloc(sizeof(uint16_t*) * BindingCapacity);
     for (size_t i = 0; i < BindingCapacity; i++) {

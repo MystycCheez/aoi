@@ -4,14 +4,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-BindingTable* InitBindingData(uint64_t capacity, uint64_t depth)
+BindingTable* InitBindingData(uint64_t capacity)
 {
     BindingTable* Table = malloc(sizeof(BindingTable));
 
     Table->capacity = capacity;
     Table->count = 0;
     Table->chain = NULL;
-    Table->depth = depth;
     Table->entries = malloc(sizeof(BindingEntry) * Table->capacity);
 
     for (uint64_t i = 0; i < Table->capacity; i++) {
@@ -34,7 +33,7 @@ BindingTable* GetBindingChain(BindingTable* Table)
 
 void ResizeBindingTable(aoiData* Data, BindingTable* Table)
 {
-    BindingTable* list = InitBindingData(Table->capacity * 4, 0);
+    BindingTable* list = InitBindingData(Table->capacity * 4);
     if (!list) {
         fprintf(stderr, "ResizeBindingTable:\n");
         fprintf(stderr, "malloc failed!\n");
@@ -101,7 +100,7 @@ void AddBinding(aoiData* Data, BindingTable* Table, const char* name)
         if (Table->chain) {
             AddBinding(Data, Table->chain, name);
         } else {
-            Table->chain = InitBindingData(DEFAULT_CAPACITY, Table->depth);
+            Table->chain = InitBindingData(DEFAULT_CAPACITY);
             AddBinding(Data, Table->chain, name);
         }
     } else {
@@ -208,6 +207,19 @@ void ResetBindings(aoiData* Data)
         if (!Data->ActiveBindings[i]) continue;
         *Data->ActiveBindings[i] = 0;
     }
+}
+
+void _BindingCleanup(aoiData *Data)
+{
+    BindingTable* Chain = Data->BindingData;
+
+    size_t count = 0;
+
+    while (Chain->chain != NULL) {
+        Chain = Chain->chain;
+        count++;
+    }
+    
 }
 
 void BindingCleanup(aoiData* Data)
