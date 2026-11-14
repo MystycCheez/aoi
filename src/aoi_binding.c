@@ -92,16 +92,16 @@ void ResizeBindingTable(aoiData* Data, BindingTable* Table)
     Data->ActionData->patternLen = Table->capacity;
 }
 
-void AddBinding(aoiData* Data, BindingTable* Table, const char* name)
+void AddBindingRecursive(aoiData* Data, BindingTable* Table, const char* name)
 {
     uint64_t hash = HashStr(name);
     uint64_t i = hash % Table->capacity;
     if (Table->entries[i].name) {
         if (Table->chain) {
-            AddBinding(Data, Table->chain, name);
+            AddBindingRecursive(Data, Table->chain, name);
         } else {
             Table->chain = InitBindingData(DEFAULT_CAPACITY);
-            AddBinding(Data, Table->chain, name);
+            AddBindingRecursive(Data, Table->chain, name);
         }
     } else {
         Table->entries[i].name = name;
@@ -242,18 +242,18 @@ void BindingCleanup(aoiData* Data)
         size_t count = 0;
         size_t index = 0;
         
-        // Surely there is a better way to do this???
         while ((Chain = GetBindingChain(Chain)) != NULL) count++;
         Chain = GetBindingChain(Start);
 
         BindingTable** Chains = malloc(sizeof(BindingTable*) * (count + 1));
 
-        bool looped = false;
-        while ((Chain = GetBindingChain(Chain))) {
+        do {
+            printf("%p\n", Chain);
+            printf("index: %zu", index);
             Chains[index++] = Chain;
-            looped = true;
-        }
-        if (looped) index--;
+        } while ((Chain = GetBindingChain(Chain)));
+        index--;
+        printf("index: %zu", index);
 
         while (index >= 0) {
             free(Chains[index]->entries);
@@ -263,8 +263,8 @@ void BindingCleanup(aoiData* Data)
         free(Chains);
     }
     
+    free(Start->entries);
+    free(Start);
+
     free(Data->ActiveBindings);
-    
-    free(Data->BindingData->entries);
-    free(Data->BindingData);
 }

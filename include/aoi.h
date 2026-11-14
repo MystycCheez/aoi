@@ -13,7 +13,7 @@ TODO: Put introduction here
 #define DEFAULT_CAPACITY 8
 #define PATTERN_IGNORE UINT16_MAX
 
-typedef struct aoiData aoiData;
+// typedef struct aoiData aoiData;
 
 enum Flags {
     AOI_STRICT,
@@ -61,11 +61,6 @@ typedef struct UserDataTable {
     uint64_t capacity;
 } UserDataTable;
 
-typedef struct Action {
-    void (*const action)(aoiData*);
-    const char* name;
-    const char* desc;
-} Action;
 
 typedef struct aoiData {
     uint16_t** ActiveBindings;
@@ -74,6 +69,12 @@ typedef struct aoiData {
     UserDataTable* UserData;
 } aoiData;
 
+typedef struct Action {
+    void (*const action)(aoiData*);
+    const char* name;
+    const char* desc;
+} Action;
+
 void A_DoNothing(aoiData* Data);
 
 // aoi_binding.c
@@ -81,7 +82,7 @@ BindingTable* InitBindingData(uint64_t capacity);
 BindingTable* GetBindingStructure(aoiData* Data);
 BindingTable* GetBindingChain(BindingTable* Table);
 void ResizeBindingTable(aoiData* Data, BindingTable* Table);
-void AddBinding(aoiData* Data, BindingTable* Table, const char* name);
+void AddBindingRecursive(aoiData* Data, BindingTable* Table, const char* name);
 BindingEntry* GetBindingEntry(aoiData* Data, char* name);
 uint16_t GetBinding(aoiData* Data, char* name);
 uint16_t* ConvertBindingsToPattern(BindingTable* Table, BindingEntry binding[]);
@@ -103,7 +104,8 @@ ActionEntry* GetActionEntryFromPattern(ActionTable* Table, const uint16_t* patte
 ActionEntry* GetActionEntryFromCurrentBindings(aoiData* Data);
 void AddActionFromPattern(ActionTable* Table, Action* action, const uint16_t* pattern);
 void AddActionFromEntry(ActionTable* Table, ActionEntry* entry);
-void AddActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding);
+bool CompareBindings(aoiData* Data, BindingEntry binding[]);
+void AddActionFromBinding(aoiData* Data, Action* action, BindingEntry binding[]);
 void SetActionFromKeyAction(ActionTable* Table, Action* action, const uint16_t* pattern);
 void SetActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding);
 void ActionHandler(aoiData* Data);
@@ -141,6 +143,9 @@ uint64_t HashPattern(const uint16_t* pattern, uint64_t len);
 
 #define SetAction(aoiData, Action, ...) \
     SetActionFromBinding(aoiData, Action, (BindingEntry[]){__VA_ARGS__, {NULL, 0}})
+
+#define AddBinding(aoiData, Binding) \
+    AddBindingRecursive(aoiData, aoiData->BindingData, Binding);
 
 #define SetBindings(aoiData, ...) \
     SetBindings_(aoiData, (BindingEntry[]){__VA_ARGS__, {NULL, 0}})

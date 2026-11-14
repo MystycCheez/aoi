@@ -98,7 +98,7 @@ void ResizeActionTable(ActionTable* Table)
         exit(EXIT_FAILURE);
     }
 
-    mempcpy(Table->entries, tmp->entries, sizeof(ActionEntry) * Table->capacity);
+    memcpy(Table->entries, tmp->entries, sizeof(ActionEntry) * Table->capacity);
     free(tmp->entries);
     free(tmp);
 }
@@ -172,8 +172,31 @@ void AddActionFromEntry(ActionTable* Table, ActionEntry* entry)
     AddActionFromPattern(Table, entry->action, entry->pattern);
 }
 
-void AddActionFromBinding(aoiData* Data, Action* action, BindingEntry* binding)
+// TODO: fix
+bool CompareBindings(aoiData* Data, BindingEntry binding[])
 {
+    BindingTable* node = Data->BindingData;
+
+    while (node != NULL) {
+        for (size_t i = 0; i < Data->BindingData->count; i++) {
+            for (size_t j = 0; j < Data->BindingData->count; j++) {
+                if (strcmp(node->entries[i].name, binding[j].name) == 0) {
+                    return true;
+                }
+            }
+        }
+        node = node->chain;
+    }
+
+    return false;
+}
+
+void AddActionFromBinding(aoiData* Data, Action* action, BindingEntry binding[])
+{
+    // if (CompareBindings(Data, binding) == false) {
+    //     fprintf(stderr, "Unregistered binding(s) found\n");
+    // }
+
     uint16_t* pattern = ConvertBindingsToFuzzyPattern(Data->BindingData, binding);
     AddActionFromPattern(Data->ActionData, action, pattern);
 }
